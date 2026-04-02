@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【書審資料】光影建築+ 開發報告 - 陳柏安</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ntust-red: #8b0000;
+            --slate-gray: #1e293b;
+            --accent-gold: #d97706;
+        }
+        
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0; padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .paper-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0;
+        }
+
+        .paper-page {
+            background: white !important;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 22mm 18mm; /* 標準 A4 留白 */
+            width: 210mm;
+            height: 296.8mm;
+            position: relative;
+            display: block;
+            overflow: hidden;
+            page-break-after: always;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Noto Serif TC', serif; color: var(--slate-gray); }
+        p { text-align: justify; line-height: 1.8; color: #334155; margin-bottom: 1rem; font-size: 1rem; }
+
+        .sidebar-decor {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 10px;
+            background: var(--ntust-red) !important;
+        }
+        .page-num {
+            position: absolute;
+            bottom: 15mm; right: 20mm;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #94a3b8;
+        }
+        .header-info {
+            position: absolute;
+            top: 15mm; right: 20mm;
+            font-size: 0.75rem;
+            color: var(--ntust-red);
+            letter-spacing: 0.1em;
+            border-bottom: 1.5px solid var(--ntust-red);
+        }
+
+        .image-container {
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .room-comparison-img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background: #e2e8f0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            color: #64748b;
+            border: 2px dashed #cbd5e1;
+            margin-bottom: 8px;
+        }
+        .math-box {
+            background: #0f172a !important;
+            color: #38bdf8 !important;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            margin: 15px 0;
+        }
+        .highlight-box {
+            background: #fff7ed !important;
+            border-left: 4px solid var(--accent-gold);
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+        th { background: #f8fafc; font-weight: bold; }
+
+        #print-btn {
+            position: fixed;
+            bottom: 30px; right: 30px;
+            background: var(--ntust-red);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 2000;
+            border: none;
+        }
+
+        @media print {
+            #print-btn { display: none !important; }
+            body { background: white !important; }
+            .paper-container { padding: 0 !important; }
+            .paper-page {
+                margin: 0 !important;
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+            }
+        }
+
+        @page { size: A4 portrait; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <button id="print-btn" onclick="window.print()">🖨️ 輸出 PDF 報告</button>
+
+    <div class="paper-container">
+
+        <!-- P.01 封面 -->
+        <article class="paper-page flex flex-col justify-center items-center text-center">
+            <div class="sidebar-decor"></div>
+            <div class="header-info uppercase tracking-widest">Personal Portfolio | Architecture</div>
+            <div class="mb-16">
+                <h3 class="text-2xl tracking-[0.4em] text-slate-400 mb-6 font-light">國立臺灣科技大學 建築系</h3>
+                <h1 class="text-7xl font-black mb-8 leading-tight text-slate-900 tracking-tighter">光影建築+</h1>
+                <h2 class="text-3xl font-bold text-amber-700">Web Tool Development Report</h2>
+                <div class="h-1.5 w-32 bg-amber-600 mx-auto my-12"></div>
+                <p class="text-xl italic text-slate-500 font-serif leading-relaxed">針對建築朝向、地理緯度與日照能量之<br>數位模擬研究及工具開發報告</p>
+            </div>
+            <div class="mt-20 space-y-4 text-xl">
+                <p class="text-center font-bold text-slate-800">申請人：陳柏安 (Chen Bo-An)</p>
+                <p class="text-center text-slate-400 text-sm tracking-widest uppercase">115學年度 個人申請入學專題作品集</p>
+            </div>
+            <div class="page-num">P.01</div>
+        </article>
+
+        <!-- P.02 目錄 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 目錄</div>
+            <h2 class="text-3xl font-bold mb-16 border-b-4 border-slate-100 pb-4 uppercase tracking-wider">目錄 CONTENTS</h2>
+            <div class="space-y-6 text-lg">
+                <div class="flex justify-between border-b border-dotted border-slate-300 pb-2">
+                    <span class="font-bold">一、研究動機：來自生活中的光影觀察</span><span>03</span>
+                </div>
+                <div class="flex justify-between border-b border-dotted border-slate-300 pb-2">
+                    <span class="font-bold">二、研究目的：數據驅動的建築物理探索</span><span>04</span>
+                </div>
+                <div class="flex justify-between border-b border-dotted border-slate-300 pb-2">
+                    <span class="font-bold">三、研究內容：數位模擬系統之實踐</span><span>05</span>
+                </div>
+                <div class="pl-8 text-sm text-slate-400 italic">3.1 三大場景設計：從街道到室內 (P.05) | 3.2 跨緯度日照數據 (P.06) | 3.3 技術架構與 AI 協作實務 (P.07)</div>
+                <div class="flex justify-between border-b border-dotted border-slate-300 pb-2 font-bold text-amber-700">
+                    <span>四、深度討論：光影數據對設計與都市之啟示</span><span>09</span>
+                </div>
+                <div class="pl-8 text-sm text-amber-600 italic">4.1 朝向與節能效益 (P.09) | 4.2 緯度與建築在地性 (P.10) | 4.3 都市陰影與日照權討論 (P.11)</div>
+                <div class="flex justify-between border-b border-dotted border-slate-300 pb-2 font-bold text-amber-700">
+                    <span>五、學習反思：數位時代建築師的新型態素養</span><span>12</span>
+                </div>
+                <div class="flex justify-between border-b border-dotted border-slate-300 pb-2 font-bold text-amber-700">
+                    <span>六、未來展望：邁向智慧與永續建築之工具化</span><span>13</span>
+                </div>
+            </div>
+            <div class="page-num">P.02</div>
+        </article>
+
+        <!-- P.03 研究動機 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 研究動機</div>
+            <h2 class="text-2xl font-bold mb-8 text-slate-800 border-l-4 border-amber-600 pl-4 uppercase">一、研究動機</h2>
+            <p>
+                這份研究的起點，來自於我對家中「光環境」最真實的體感差異。我居住的房間<b>朝向正北方</b>，在台灣漫長的冬季，室內幾乎整天沒有直射陽光。那種陰冷且必須整天開啟人工照明的壓抑感，與我偶然在鄰居「朝南」客廳感受到的燦爛陽光形成強烈對比。
+            </p>
+            <div class="image-container">
+                <div style="display:flex;gap:8px;">
+                  <div style="flex:1;text-align:center;">
+                    <img src="assets/r_indoor_south_winter.png" alt="南向冬至" class="room-comparison-img">
+                    <p class="text-xs text-slate-500 mt-1">南向 冬至正午｜光線進深 3.1m</p>
+                  </div>
+                  <div style="flex:1;text-align:center;">
+                    <img src="assets/r_indoor_north.png" alt="北向冬至" class="room-comparison-img">
+                    <p class="text-xs text-slate-500 mt-1">北向 冬至正午｜無直射光</p>
+                  </div>
+                </div>
+                <p class="text-xs italic text-slate-400 mt-2">圖 1.1：冬日正午朝北與朝南房間採光的強烈視覺對比（3D 模擬）</p>
+            </div>
+            <p>
+                同樣的緯度、同樣的時間，只因為窗戶朝向不同，生活品質竟有如此巨大的差異。這引發了我的好奇：太陽到底在哪裡？它的位置怎麼隨時間和季節改變？建築的朝向如何決定一個空間是否「有光」？帶著這些疑問，我決定開發一個互動式光影模擬器。
+            </p>
+            <div class="page-num">P.03</div>
+        </article>
+
+        <!-- P.04 研究目的 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 研究目的</div>
+            <h2 class="text-2xl font-bold mb-10 text-slate-800 border-l-4 border-amber-600 pl-4 uppercase">二、研究目的</h2>
+            <div class="space-y-6">
+                <div class="p-6 bg-slate-50 rounded-xl border-l-4 border-amber-600 shadow-sm">
+                    <h4 class="font-bold mb-2">1. 視覺化日照差異</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">以 3D 場景呈現不同建築朝向、不同季節下的陰影變化，讓傳統平面圖紙上難以觀察的採光問題「看得見」。</p>
+                </div>
+                <div class="p-6 bg-slate-50 rounded-xl border-l-4 border-slate-700 shadow-sm">
+                    <h4 class="font-bold mb-2">2. 探討室內採光原理</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">比較南／東／西／北四個朝向在各季節的光線進入情形，深入理解為什麼朝向選擇是建築設計初期最重要的關鍵決策。</p>
+                </div>
+                <div class="p-6 bg-slate-50 rounded-xl border-l-4 border-blue-600 shadow-sm">
+                    <h4 class="font-bold mb-2">3. 跨緯度地理分析</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">從新加坡（1°N）到赫爾辛基（60°N），模擬並體驗緯度對日照的根本性影響，進而理解台灣地理條件在全球建築脈絡中的位置。</p>
+                </div>
+                <div class="p-6 bg-slate-50 rounded-xl border-l-4 border-green-600 shadow-sm">
+                    <h4 class="font-bold mb-2">4. 將學習轉化為教育工具</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">將抽象的物理數據轉化為互動式的網頁工具，讓任何人用手機或電腦開啟連結，就能直觀操作的日照教育工具。</p>
+                </div>
+            </div>
+            <div class="page-num">P.04</div>
+        </article>
+
+        <!-- P.05 研究內容 - 場景設計 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 研究內容</div>
+            <h2 class="text-2xl font-bold mb-8 text-slate-800 border-l-4 border-amber-600 pl-4 uppercase">三、研究內容</h2>
+            <h4 class="font-bold text-slate-700 mb-4 tracking-wide">3.1 三大場景設計與物理模擬實踐</h4>
+            
+            <div class="space-y-4">
+                <p class="text-sm"><b>① 台北101都市街道</b>：以 101 為主體呈現都市陰影疊加效果。場景中高度角越低，陰影越長，直觀呈現了冬日暖陽照不進低樓層都市峽谷的原因。</p>
+                
+                <p class="text-sm"><b>② 台科大校園</b>：依據實際校園配置圖重建，以建築系所在的 <b>RB 綜合研究大樓</b> 為核心。透過模擬，我能具體觀察未來學習環境中，建物間的遮擋與採光關係。</p>
+                
+                <p class="text-sm"><b>③ 室內採光模擬</b>：在 8m×6m 的房間中即時觀察光斑。我發現南向房間在台灣冬季，正午陽光能深入室內約 3 公尺，溫暖明亮；夏季則因太陽角度高而幾乎無光射入，完美詮釋了「冬暖夏涼」的被動式設計精髓。</p>
+            </div>
+
+            <div class="image-container">
+                <div style="display:flex;gap:8px;">
+                  <div style="flex:1;text-align:center;">
+                    <img src="assets/r_indoor_south_winter.png" alt="南向冬至" class="room-comparison-img">
+                    <p class="text-xs text-slate-500 mt-1">冬至正午｜進深 3.1m</p>
+                  </div>
+                  <div style="flex:1;text-align:center;">
+                    <img src="assets/r_indoor_south_summer.png" alt="南向夏至" class="room-comparison-img">
+                    <p class="text-xs text-slate-500 mt-1">夏至正午｜進深 0.1m</p>
+                  </div>
+                </div>
+                <p class="text-xs italic text-slate-400">圖 3.1：南向房間冬夏進光深度對比——冬暖夏涼的被動式設計原理</p>
+            </div>
+            <div class="page-num">P.05</div>
+        </article>
+
+        <!-- P.06 跨緯度比較表 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 研究內容</div>
+            <h4 class="font-bold text-slate-700 mb-6 tracking-wide underline decoration-amber-300 decoration-2">3.2 全球城市跨緯度日照數據比較</h4>
+            <p class="text-sm mb-6">太陽位置並非隨機，而是遵循嚴謹的天文公式。下表為本工具實作之核心公式演算出的冬至數據：</p>
+            
+            <table>
+                <thead>
+                    <tr><th>城市</th><th>緯度</th><th>冬至正午高度角</th><th>光環境特徵</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>赫爾辛基</td><td>60°N</td><td>約 6.5°</td><td>太陽貼近地平線，陰影極長</td></tr>
+                    <tr><td>倫敦</td><td>51°N</td><td>約 15.5°</td><td>冬季日光稀缺，極度依賴朝向</td></tr>
+                    <tr><td>東京</td><td>35°N</td><td>約 31.5°</td><td>溫帶氣候下的明顯影子長度</td></tr>
+                    <tr class="bg-amber-50"><td><b>台北</b></td><td><b>25°N</b></td><td><b>約 41.5°</b></td><td><b>亞熱帶的光影層次豐富</b></td></tr>
+                    <tr><td>曼谷</td><td>13°N</td><td>約 53.5°</td><td>太陽較高，遮陽需求增加</td></tr>
+                    <tr><td>新加坡</td><td>1°N</td><td>約 65.5°</td><td>太陽接近天頂，朝向影響較小</td></tr>
+                </tbody>
+            </table>
+            
+            <p class="text-sm mt-8">
+                這項對比讓我理解到，緯度決定了居住體驗。在新加坡，太陽幾乎從頭頂照下，核心問題是遮陽與通風；越往高緯度，建築師必須像獵人一樣捕捉每一寸珍貴的陽光。
+            </p>
+            <div class="page-num">P.06</div>
+        </article>
+
+        <!-- P.07 開發實務 - AI 協作 (重點頁) -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 開發實務</div>
+            <h4 class="font-bold text-slate-700 mb-6 tracking-wide underline decoration-amber-300 decoration-2">3.3 人機協作的工程實踐：AI 是工具，非創作者</h4>
+            <p class="text-sm mb-4">
+                我沒有深厚的 JavaScript 基礎，但我有一個清楚想解決的問題。我採用<b>純網頁技術（HTML + Three.js）</b>開發，並與 <b>Claude Code (AI)</b> 深度協作。這不是簡單的複製代碼，而是一場高強度的設計溝通實驗。
+            </p>
+            
+            <div class="highlight-box">
+                <h5 class="font-bold text-amber-900 mb-2">● 工程問題的持續迭代與修正</h5>
+                <p class="text-xs text-slate-600 leading-relaxed italic">
+                    「在實作室內切換時，房間一度飄在空中；或是台科大場景建模時，大樓位置疊加錯誤。甚至陰影方向曾出現早上、下午顛倒。我雖不懂背後複雜的渲染代碼，但我知道『早上太陽從東邊來，影子應該往西』，憑著對物理現實的直覺判斷與回饋，我引導 AI 持續修正，直到模型接近真實配置。」
+                </p>
+            </div>
+
+            <h5 class="font-bold text-slate-800 text-sm mt-8 mb-4">我的核心角色包括：</h5>
+            <ul class="text-sm text-slate-600 space-y-3">
+                <li class="flex gap-2"><span>✔</span> <b>定義邏輯</b>：確立高度角、方位角運算架構，確保符合天文物理。</li>
+                <li class="flex gap-2"><span>✔</span> <b>批判檢驗</b>：對照台科大實際校園地圖，校核建築間距與光學視覺合理性。</li>
+                <li class="flex gap-2"><span>✔</span> <b>場景決策</b>：決定呈現內容的優先順序，確保工具具備教育意義而非花哨外殼。</li>
+            </ul>
+            <div class="page-num">P.07</div>
+        </article>
+
+        <!-- P.08 技術架構 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 技術架構</div>
+            <h4 class="font-bold text-slate-700 mb-8 tracking-wide">3.4 系統技術架構總覽</h4>
+            
+            <table>
+                <thead><tr><th>組件</th><th>技術選型</th><th>作用說明</th></tr></thead>
+                <tbody>
+                    <tr><td>平台技術</td><td>HTML + JavaScript</td><td>無需安裝，手機電腦瀏覽器直接開啟</td></tr>
+                    <tr><td>3D 渲染引擎</td><td>Three.js</td><td>處理動態光源與物理陰影運算</td></tr>
+                    <tr><td>陰影技術</td><td>PCFSoftShadowMap</td><td>模擬軟陰影質感，接近真實自然光</td></tr>
+                    <tr><td>部署平台</td><td>GitHub Pages</td><td>免費靜態部署，任何人用連結即可存取</td></tr>
+                </tbody>
+            </table>
+
+            <div class="math-box">
+                // 太陽位置演算核心程式碼片段<br>
+                const declination = 23.45 * Math.sin( (360/365) * (284 + n) * RAD );<br>
+                const hourAngle = 15 * (time - 12);<br>
+                const sinH = Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(H);
+            </div>
+            <p class="text-xs text-slate-400 italic text-center mt-4">這套公式賦予了這個網頁模擬器跨緯度運算的科學靈魂。</p>
+            <div class="page-num">P.08</div>
+        </article>
+
+        <!-- P.09 討論 - 朝向 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 討論與分析</div>
+            <h2 class="text-2xl font-bold mb-8 text-slate-800 border-l-4 border-amber-600 pl-4 uppercase">四、討論</h2>
+            <h4 class="text-lg font-bold text-amber-700 mb-4">4.1 朝向對採光的決定性影響</h4>
+            <p>
+                這個模擬器給了我最初問題的答案：我家的北向房間，並不是「比較暗」，而是物理上就不可能有冬天的直射陽光。這不是設計問題，是<b>地理問題</b>。
+            </p>
+            <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-lg my-8">
+                <div class="flex justify-around text-center">
+                    <div>
+                        <span class="block text-xs text-amber-400 uppercase mb-2">南向房間 (冬至)</span>
+                        <span class="text-3xl font-black">~ 3.0 m</span>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">陽光深入，被動獲熱</p>
+                    </div>
+                    <div class="border-l border-slate-700 h-16"></div>
+                    <div>
+                        <span class="block text-xs text-slate-400 uppercase mb-2">北向房間 (全年)</span>
+                        <span class="text-3xl font-black text-slate-500">0.0 m</span>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">僅有漫射，無直射光</p>
+                    </div>
+                </div>
+            </div>
+            <p>
+                「有光」不等於「好光」。西向房間在夏季下午會面臨嚴重的西曬過熱，東向則只有上午短暫受光。模擬證實：<b>「朝向」是建築節能、熱舒適的第一道防線。</b>
+            </p>
+            <div class="page-num">P.09</div>
+        </article>
+
+        <!-- P.10 討論 - 在地性 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 討論與分析</div>
+            <h4 class="text-lg font-bold text-slate-800 mb-6 border-b-2 border-amber-600 pb-2">4.2 緯度與建築在地性 (Locality)</h4>
+            <p>
+                透過全球尺度的比較，我開始思考：許多我們熟悉的建築教科書範例來自歐洲，那些在 50°N 緯度下誕生的設計原則，在 25°N 的台灣適用嗎？
+            </p>
+            <p>
+                模擬結果顯示，在赫爾辛基，建築師必須拼命捕捉陽光；而在熱帶地區如新加坡，遮陽反而是重點。這印證了建築必須具備深刻的<b>在地性</b>。建築師的職責，在於利用數位技術解讀土地的氣候密碼，而非套用統一的標準模板。
+            </p>
+            <div class="image-container">
+                <div style="display:flex;gap:8px;">
+                  <div style="flex:1;text-align:center;">
+                    <img src="assets/r_helsinki.png" alt="赫爾辛基冬至" class="room-comparison-img">
+                    <p class="text-xs text-slate-500 mt-1">赫爾辛基 60°N｜冬至正午高度角 6.4°｜陰影 340m</p>
+                  </div>
+                  <div style="flex:1;text-align:center;">
+                    <img src="assets/r_101_winter.png" alt="台北冬至" class="room-comparison-img">
+                    <p class="text-xs text-slate-500 mt-1">台北 25°N｜冬至下午高度角 24.8°｜陰影 82m</p>
+                  </div>
+                </div>
+                <p class="text-xs italic text-slate-400">圖 4.1：高緯度赫爾辛基與台北的冬至日照極端對比</p>
+            </div>
+            <div class="page-num">P.10</div>
+        </article>
+
+        <!-- P.11 討論 - 都市權利 -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 討論與分析</div>
+            <h4 class="text-lg font-bold text-slate-800 mb-6 border-b-2 border-amber-600 pb-2">4.3 都市陰影、建築間距與「日照權」</h4>
+            <p>
+                在台北 101 的場景中，一棟 38m 的建物在冬至下午 3 點，影長可延伸超過 70 公尺。這讓我深刻理解台灣《建築技術規則》第 23 條規定建物間距的原因——<b>採光不是個人問題，而是都市正義。</b>
+            </p>
+            <div class="image-container bg-white">
+                <img src="assets/r_101_winter.png" alt="101冬至陰影" class="room-comparison-img">
+                <p class="text-xs italic text-slate-400 text-center">圖 4.2：台北101冬至下午3點，高度角24.8°，主塔影長82公尺覆蓋周邊街道</p>
+            </div>
+            <p class="text-sm">
+                <b>模擬的限制與反思：</b>目前的模型尚無法精確計算牆體顏色帶來的「反射光」以及細部的屋簷結構。這提醒我，工具雖能輔助直觀理解，但真正的設計仍需更細緻的專業判斷與經驗積累。
+            </p>
+            <div class="page-num">P.11</div>
+        </article>
+
+        <!-- P.12 學習反思 (擴展版) -->
+        <article class="paper-page">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 學習反思</div>
+            <h2 class="text-2xl font-bold mb-10 text-slate-800 border-l-4 border-amber-600 pl-4 uppercase">五、學習反思</h2>
+            <div class="space-y-8">
+                <div class="highlight-box shadow-sm">
+                    <h4 class="font-bold mb-3 flex items-center gap-2">● 從感性體感到理性數據的跨越</h4>
+                    <p class="text-sm leading-relaxed">
+                        以前我只會感官化地抱怨「我家很暗」，現在我能用數據解釋「台北冬至的高度角讓北側無光」。這種將<b>生活不適轉化為科學分析</b>的過程，是我開發此專案最大的收穫。
+                    </p>
+                </div>
+                
+                <div class="p-6 bg-slate-50 rounded-xl border">
+                    <h4 class="font-bold mb-3">● 對「學建築」的新認識</h4>
+                    <p class="text-sm leading-relaxed">
+                        在做這個專案之前，我對建築的想像停留在畫圖與美感。但這個過程讓我看到，「光」是這一切的交叉點：它關於物理（角度、反射）、關於生理（感知）、關於文化、更關於永續。理解採光，是進入建築設計核心的最佳路徑。
+                    </p>
+                </div>
+                
+                <p class="text-sm text-slate-500 italic">
+                    「我相信這種『提出問題、驗證結果、持續修正』的數位化思考方式，比任何純粹的技術能力都更接近建築設計的本質。」
+                </p>
+            </div>
+            <div class="page-num">P.12</div>
+        </article>
+
+        <!-- P.13 未來展望 (擴展版) -->
+        <article class="paper-page flex flex-col">
+            <div class="sidebar-decor"></div>
+            <div class="header-info">陳柏安 | 未來展望</div>
+            <h2 class="text-2xl font-bold mb-10 text-slate-800 border-l-4 border-amber-600 pl-4 uppercase">六、未來展望</h2>
+            <div class="space-y-6 flex-grow">
+                <div class="flex gap-6 items-start border-b pb-6">
+                    <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center shrink-0 font-black text-amber-600">A</div>
+                    <div>
+                        <h4 class="font-bold mb-1 text-slate-800">遮陽板參數化模組</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">讓使用者輸入窗高與遮陽板深度，自動判斷「夏至能遮陽、冬至能採光」的最佳尺寸。這是在台灣氣候下被動式設計最實用的計算插件。</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-start border-b pb-6">
+                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center shrink-0 font-black text-indigo-600">B</div>
+                    <div>
+                        <h4 class="font-bold mb-1 text-slate-800">AR 全景實境疊加功能</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">結合手機相機，在真實空間中疊加陽光方向與陰影預測，讓使用者在預售屋或工地現場就能直接模擬採光效果，降低居住者的資訊不對稱。</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 items-start">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0 font-black text-green-600">C</div>
+                    <div>
+                        <h4 class="font-bold mb-1 text-slate-800">年日照時數視覺化統計</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">計算特定朝向、特定城市的全年平均日照時數並輸出圖表，為永續建築設計提供更長時效的數據基礎。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-auto pt-10 text-center border-t border-slate-100">
+                <p class="text-slate-400 italic text-xs tracking-[0.2em] mb-4">「讓每一座建築，都能擁抱最溫暖的陽光。」 </p>
+                <p class="text-slate-500 text-xs mb-2">🔗 線上體驗：<span class="font-mono text-amber-700">cheyuan1115.github.io/shadow-sim-app</span></p>
+                <p class="text-slate-900 font-bold text-sm">陳柏安 | 115學年度 | 國立臺灣科技大學 建築系書審專題報告</p>
+            </div>
+            <div class="page-num">P.13</div>
+        </article>
+
+    </div>
+
+</body>
+</html>
