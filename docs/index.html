@@ -656,18 +656,16 @@ function buildTaipei101() {
 }
 
 // ── Scene B: 台科大 ───────────────────────────────────────────
-// 座向依衛星圖：研揚(TR)=東北、運動場=中東、圖書館=西、建築系RB=西南
-// Three.js: +X=東, -Z=北, +Z=南
-// 建築間距確認（各建築中心±半寬深不重疊）：
-//   TR(22,-15) w6d18  → x:19-25 z:-24--6
-//   Track(6,-4) rect12x8 r4 → x:-4-16 z:-8-0  ← TR(NE)與T1(SW)對角中間
-//   Tennis(16,4) w12d8 → x:10-22 z:0-8
-//   Bball(14,12) w12d8 → x:8-20 z:8-16
-//   AU(-6,4) w6d5      → x:-9--3 z:1.5-6.5
-//   T1(-2,12) w8d8h16  → x:-6-2  z:8-16       ← 工程一館 移至西南
-//   Library(-22,2) w8d10 → x:-26--18 z:-3-7
-//   RB(-12,12) w12d10   → x:-18--6 z:7-17      ← 建築系 西南
-//   T4(4,22) w12d7      → x:-2-10 z:18.5-25.5
+// 座向：校門在東側(基隆路), +X=東, -Z=北, +Z=南
+// 各建築中心±半尺寸不重疊：
+//   TR  ( 20, -5) w6 d14 h30  → x:17-23  z:-12-+2
+//   球場(14,-12)(8,-12)(2,-12) w5 d8    → x:11.5-16.5/5.5-10.5/-0.5-4.5  z:-16--8
+//   跑道(  8, -2) rect10x6 r3          → x:1-15   z:-5-+1
+//   T4  (-10, -8) w10 d8 h20  → x:-15--5 z:-12--4
+//   T1  ( -2,  0) w6  d6 h18  → x:-5-+1  z:-3-+3
+//   AU  ( -8,  4) w6  d6 h12  → x:-11--5 z:+1-+7
+//   RB  ( -8, 12) w10 d10 h24 → x:-13--3 z:+7-+17
+//   Lib (-22,  0) w8  d12 h28 → x:-26--18 z:-6-+6
 function buildNTUST() {
   const g = groupNTUST;
   const matGnd   = new THREE.MeshLambertMaterial({color:0xC8C0A0});
@@ -690,113 +688,116 @@ function buildNTUST() {
   const gnd = new THREE.Mesh(new THREE.PlaneGeometry(100,100), matGnd);
   gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; g.add(gnd);
 
-  // Paths (校園主要路徑)
-  [[0,5,4,60],[0,-2,50,4],[-14,8,4,20]].forEach(([x,z,w,d])=>{
+  // Paths (東西向主道 + 南北向支道)
+  [[2,0,54,4],[-4,-6,4,18],[-4,8,4,18]].forEach(([x,z,w,d])=>{
     const p=new THREE.Mesh(new THREE.PlaneGeometry(w,d),matPath);
     p.rotation.x=-Math.PI/2; p.position.set(x,0.01,z); p.receiveShadow=true; g.add(p);
   });
-  [{x:-6,z:16,w:16,d:8},{x:4,z:2,w:6,d:8}].forEach(p=>{
-    const gr=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.d),matGrass);
-    gr.rotation.x=-Math.PI/2; gr.position.set(p.x,0.02,p.z); gr.receiveShadow=true; g.add(gr);
-  });
+  // Grass plaza near center
+  const gr=new THREE.Mesh(new THREE.PlaneGeometry(6,6),matGrass);
+  gr.rotation.x=-Math.PI/2; gr.position.set(4,-0.5,0); gr.receiveShadow=true; g.add(gr);
 
   // ── TR 研揚大樓 (東北) ─────────────────────────────────────
-  // center (22,-16), w=6, d=18, h=30
-  addBox(g, 22,15,-16, 6.0,30,18.0, matTR);
-  addBox(g, 22,31,-16, 4.0, 2.0,18.0, matTR);
-  addBox(g, 22,32.2,-16, 3.2,0.4,18.0, matRoof);
+  // center (20,-5), w=6, d=14, h=30
+  addBox(g, 20,15,-5, 6.0,30,14.0, matTR);
+  addBox(g, 20,31,-5, 4.0,2.0,14.0, matTR);
+  addBox(g, 20,32.2,-5, 3.2,0.4,14.0, matRoof);
   for(let f=1;f<=10;f++){
-    const wm=new THREE.Mesh(new THREE.PlaneGeometry(16.0,2.2),matGls);
-    wm.position.set(18.98, f*2.9-1.0, -16); wm.rotation.y=Math.PI/2; g.add(wm);
+    const wm=new THREE.Mesh(new THREE.PlaneGeometry(12.0,2.2),matGls);
+    wm.position.set(16.98, f*2.9-1.0, -5); wm.rotation.y=Math.PI/2; g.add(wm);
   }
   const trLbl=textLabel('TR 研揚大樓',3.8,0.85);
-  trLbl.position.set(22,34,-16); g.add(trLbl);
+  trLbl.position.set(20,34,-5); g.add(trLbl);
 
-  // ── 跑道/運動場 (中北，與 TR 同緯度，TR 西側) ─────────────
-  // TR=(22,-15)，跑道在 TR 偏西同緯 → center (5,-10)
-  const trackRect=new THREE.Mesh(new THREE.PlaneGeometry(12,8),matTrack);
-  trackRect.rotation.x=-Math.PI/2; trackRect.position.set(5,0.03,-10); trackRect.receiveShadow=true; g.add(trackRect);
-  [[-1,-10],[11,-10]].forEach(([x,z])=>{
-    const e=new THREE.Mesh(new THREE.CircleGeometry(4,32),matTrack);
+  // ── 球場 (TR 南側，運動區北半) ────────────────────────────
+  // 3 courts N of track at z=-12: tennis×2, basketball×1
+  // Court A (14,-12) w=5 d=8 — tennis
+  const ctA=new THREE.Mesh(new THREE.PlaneGeometry(5,8),tennisMat);
+  ctA.rotation.x=-Math.PI/2; ctA.position.set(14,0.03,-12); ctA.receiveShadow=true; g.add(ctA);
+  // Court B (8,-12) w=5 d=8 — tennis
+  const ctB=new THREE.Mesh(new THREE.PlaneGeometry(5,8),tennisMat);
+  ctB.rotation.x=-Math.PI/2; ctB.position.set(8,0.03,-12); ctB.receiveShadow=true; g.add(ctB);
+  // Court C (2,-12) w=5 d=8 — basketball
+  const ctC=new THREE.Mesh(new THREE.PlaneGeometry(5,8),bballMat);
+  ctC.rotation.x=-Math.PI/2; ctC.position.set(2,0.03,-12); ctC.receiveShadow=true; g.add(ctC);
+  // Court lines
+  [11.5,16.5].forEach(x=>{
+    const ln=new THREE.Mesh(new THREE.PlaneGeometry(0.2,8),new THREE.MeshLambertMaterial({color:0xFFFFFF}));
+    ln.rotation.x=-Math.PI/2; ln.position.set(x,0.04,-12); g.add(ln);
+  });
+
+  // ── 跑道 (運動區南半，中東) ───────────────────────────────
+  // oval center (8,-2), rect 10×6, semis r=3 at (3,-2)(13,-2)
+  const trackRect=new THREE.Mesh(new THREE.PlaneGeometry(10,6),matTrack);
+  trackRect.rotation.x=-Math.PI/2; trackRect.position.set(8,0.03,-2); trackRect.receiveShadow=true; g.add(trackRect);
+  [[3,-2],[13,-2]].forEach(([x,z])=>{
+    const e=new THREE.Mesh(new THREE.CircleGeometry(3,32),matTrack);
     e.rotation.x=-Math.PI/2; e.position.set(x,0.03,z); e.receiveShadow=true; g.add(e);
   });
-  const inner1=new THREE.Mesh(new THREE.PlaneGeometry(6,4),matInner);
-  inner1.rotation.x=-Math.PI/2; inner1.position.set(5,0.04,-10); inner1.receiveShadow=true; g.add(inner1);
-  [[-1,-10],[11,-10]].forEach(([x,z])=>{
-    const e=new THREE.Mesh(new THREE.CircleGeometry(2,32),matInner);
-    e.rotation.x=-Math.PI/2; e.position.set(x,0.04,z); e.receiveShadow=true; g.add(e);
+  const inner1=new THREE.Mesh(new THREE.PlaneGeometry(5,3),matInner);
+  inner1.rotation.x=-Math.PI/2; inner1.position.set(8,0.04,-2); inner1.receiveShadow=true; g.add(inner1);
+  [[3,-2],[13,-2]].forEach(([x,z])=>{
+    const ei=new THREE.Mesh(new THREE.CircleGeometry(1.5,32),matInner);
+    ei.rotation.x=-Math.PI/2; ei.position.set(x,0.04,z); ei.receiveShadow=true; g.add(ei);
   });
 
-  // ── 網球場 (跑道東側) ─────────────────────────────────────
-  // center (12,-4), w=12, d=8
-  const tennis=new THREE.Mesh(new THREE.PlaneGeometry(12,8),tennisMat);
-  tennis.rotation.x=-Math.PI/2; tennis.position.set(12,0.03,-4); tennis.receiveShadow=true; g.add(tennis);
-  [6,18].forEach(x=>{
-    const line=new THREE.Mesh(new THREE.PlaneGeometry(0.2,8),new THREE.MeshLambertMaterial({color:0xFFFFFF}));
-    line.rotation.x=-Math.PI/2; line.position.set(x,0.04,-4); g.add(line);
-  });
+  // ── T4 第四教學大樓 (西北) ────────────────────────────────
+  // center (-10,-8), w=10, d=8, h=20
+  addBox(g, -10,10,-8, 10.0,20,8.0, matT4);
+  addBox(g, -10,20.2,-8, 10.2,0.4,8.2, matRoof);
+  for(let f=1;f<=6;f++) addWindowBand(g,-10,-8,10.0,8.0,f*3.0,matWin);
+  const t4Lbl=textLabel('T4 第四教學大樓',4.5,0.9); t4Lbl.position.set(-10,22,-8); g.add(t4Lbl);
 
-  // ── 籃球場 (球場南側) ─────────────────────────────────────
-  // center (12,6), w=12, d=8
-  const bball=new THREE.Mesh(new THREE.PlaneGeometry(12,8),bballMat);
-  bball.rotation.x=-Math.PI/2; bball.position.set(12,0.03,6); bball.receiveShadow=true; g.add(bball);
-  const midLine=new THREE.Mesh(new THREE.PlaneGeometry(12,0.2),new THREE.MeshLambertMaterial({color:0xFFFFFF}));
-  midLine.rotation.x=-Math.PI/2; midLine.position.set(12,0.04,6); g.add(midLine);
+  // ── T1 第一教學大樓 (中央) ────────────────────────────────
+  // center (-2,0), w=6, d=6, h=18
+  addBox(g, -2,9,0, 6.0,18,6.0, matT1);
+  addBox(g, -2,18.2,0, 6.2,0.4,6.2, matRoof);
+  for(let f=1;f<=6;f++) addWindowBand(g,-2,0,6.0,6.0,f*2.8,matWin);
+  const t1Lbl=textLabel('T1 第一教學大樓',4.5,0.9); t1Lbl.position.set(-2,20,0); g.add(t1Lbl);
 
   // ── AU 視聽館 (中央偏西) ──────────────────────────────────
-  // center (-6,4), w=6, d=5, h=8
-  addBox(g, -6,4,4, 6.0,8,5.0, matT4);
-  addBox(g, -6,8.2,4, 6.2,0.4,5.2, matRoof);
-  const auLbl=textLabel('AU 視聽館',2.8,0.7); auLbl.position.set(-6,9.5,4); g.add(auLbl);
-  const pond=new THREE.Mesh(new THREE.CircleGeometry(1.8,24),new THREE.MeshLambertMaterial({color:0x5090B0}));
-  pond.rotation.x=-Math.PI/2; pond.position.set(-4,0.05,0); g.add(pond);
-
-  // ── T1 工程一館 (西南) ────────────────────────────────────
-  // center (-2,12), w=8, d=8, h=16  ← 依地圖：工程一館在西南
-  addBox(g, -2,8,12, 8.0,16,8.0, matT1);
-  addBox(g, -2,16.2,12, 8.2,0.4,8.2, matRoof);
-  const t1Lbl=textLabel('T1 工程一館',3.2,0.75); t1Lbl.position.set(-2,18,12); g.add(t1Lbl);
+  // center (-8,4), w=6, d=6, h=12
+  addBox(g, -8,6,4, 6.0,12,6.0, matT4);
+  addBox(g, -8,12.2,4, 6.2,0.4,6.2, matRoof);
+  const auLbl=textLabel('AU 視聽館',3.0,0.7); auLbl.position.set(-8,14,4); g.add(auLbl);
+  const pond=new THREE.Mesh(new THREE.CircleGeometry(1.5,24),new THREE.MeshLambertMaterial({color:0x5090B0}));
+  pond.rotation.x=-Math.PI/2; pond.position.set(-4,0.05,2); g.add(pond);
 
   // ── RB 綜合研究大樓/建築系 (西南) ────────────────────────
-  // center (-12,12), w=12, d=10, h=24
-  addBox(g, -12,12,12, 12.0,24,10.0, matRB);
-  addBox(g, -12,25.5,12, 9.5,3.0,8.0, matRB);
-  addBox(g, -12,27.2,12, 8.0,0.4,7.0, matRoof);
-  for(let f=1;f<=8;f++) addBox(g,-12,f*2.9-0.1,17.3,12.2,0.2,0.55,matRoof);
+  // center (-8,12), w=10, d=10, h=24
+  addBox(g, -8,12,12, 10.0,24,10.0, matRB);
+  addBox(g, -8,25.5,12, 8.0,3.0,8.0, matRB);
+  addBox(g, -8,27.2,12, 7.0,0.4,7.0, matRoof);
+  for(let f=1;f<=8;f++) addBox(g,-8,f*2.9-0.1,17.3,10.2,0.2,0.55,matRoof);
   for(let f=1;f<=8;f++){
-    const wm=new THREE.Mesh(new THREE.PlaneGeometry(10,2.4),matGls);
-    wm.position.set(-12,f*2.9-1.2,17.02); wm.rotation.y=Math.PI; g.add(wm);
+    const wm=new THREE.Mesh(new THREE.PlaneGeometry(8,2.4),matGls);
+    wm.position.set(-8,f*2.9-1.2,17.02); wm.rotation.y=Math.PI; g.add(wm);
   }
-  const rbLbl=textLabel('RB 建築系 8F',5.0,1.0); rbLbl.position.set(-12,29.5,13); g.add(rbLbl);
+  const rbLbl=textLabel('RB 建築系 8F',5.0,1.0); rbLbl.position.set(-8,29.5,13); g.add(rbLbl);
 
   // ── 圖書館 Library (西) ───────────────────────────────────
-  // center (-22,2), w=8, d=10, h=28
-  addBox(g, -22,14,2, 8.0,28,10.0, matLib);
-  addBox(g, -22,28.2,2, 8.2,0.4,10.2, matRoof);
-  addBox(g, -17.95,6,2, 0.3,12,6.0, matGls);
-  for(let f=1;f<=8;f++) addWindowBand(g,-22,2,8.0,10.0,f*3.2,matWin);
-  const libLbl=textLabel('圖書館 Library',4.2,0.9); libLbl.position.set(-22,30,2); g.add(libLbl);
+  // center (-22,0), w=8, d=12, h=28
+  addBox(g, -22,14,0, 8.0,28,12.0, matLib);
+  addBox(g, -22,28.2,0, 8.2,0.4,12.2, matRoof);
+  addBox(g, -17.95,6,0, 0.3,12,8.0, matGls);
+  for(let f=1;f<=8;f++) addWindowBand(g,-22,0,8.0,12.0,f*3.2,matWin);
+  const libLbl=textLabel('圖書館 Library',4.2,0.9); libLbl.position.set(-22,30,0); g.add(libLbl);
 
-  // ── T4 (南偏東) ───────────────────────────────────────────
-  // center (4,22), w=12, d=7, h=16
-  addBox(g, 4,8,22, 12.0,16,7.0, matT4);
-  addBox(g, 4,16.2,22, 12.2,0.4,7.2, matRoof);
-  for(let f=1;f<=5;f++) addWindowBand(g,4,22,12.0,7.0,f*3.0,matWin);
-  const t4Lbl=textLabel('T4',2.5,0.75); t4Lbl.position.set(4,18,22); g.add(t4Lbl);
-
-  // ── 校門 Gate (南端) ──────────────────────────────────────
-  addBox(g, 0,2.5,28, 16.0,0.5,0.8, matRoof);
-  addBox(g,-6,1.25,28, 0.8,2.5,0.8, matRoof);
-  addBox(g, 8,1.25,28, 0.8,2.5,0.8, matRoof);
-  const gateLbl=textLabel('國立臺灣科技大學',7.0,1.1); gateLbl.position.set(0,3.8,28); g.add(gateLbl);
+  // ── 校門 Gate (東側，面對基隆路) ─────────────────────────
+  addBox(g, 28,2.5,-4, 0.8,5,0.8, matRoof);
+  addBox(g, 28,2.5, 4, 0.8,5,0.8, matRoof);
+  addBox(g, 28,5.2, 0, 0.5,0.4,8, matRoof);
+  const gateLbl=textLabel('國立臺灣科技大學',7.0,1.1); gateLbl.position.set(28,6.5,0); g.add(gateLbl);
 
   // Trees
-  [[4,24],[12,24],[-2,22],[24,18],[28,4],[28,-10],[16,-24],[2,-24],
-   [-12,-20],[-14,-6],[-14,6],[-26,0],[-26,10],[-26,-6],[-2,0],[14,16]
+  [[20,-14],[14,-18],[8,-18],[2,-18],
+   [24,-10],[26,2],[26,10],[22,18],
+   [6,8],[0,8],[-4,16],[-14,18],
+   [-14,-4],[-26,6],[-26,-4],[4,-6]
   ].forEach(([x,z])=>addTree(g,x,z));
 
-  g.add(compassLabel('N 北',0,-30)); g.add(compassLabel('S 南',0,30));
-  g.add(compassLabel('E 東',30,0,Math.PI/2)); g.add(compassLabel('W 西',-30,0,Math.PI/2));
+  g.add(compassLabel('N 北',0,-34)); g.add(compassLabel('S 南',0,34));
+  g.add(compassLabel('E 東',34,0,Math.PI/2)); g.add(compassLabel('W 西',-34,0,Math.PI/2));
 }
 
 // ── Scene C: 室內採光 ─────────────────────────────────────────
