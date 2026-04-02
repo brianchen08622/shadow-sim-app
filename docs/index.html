@@ -144,7 +144,21 @@
     /* ── Footer ── */
     .panel-footer {
       padding:10px 16px 16px; text-align:center;
-      font-size:10px; color:rgba(106,138,106,0.5);
+      font-size:11px; color:rgba(180,210,180,0.88);
+      line-height:1.6;
+    }
+
+    /* ── Compass ── */
+    #compass {
+      position:fixed; z-index:20; pointer-events:none;
+      width:70px; height:70px;
+    }
+    @media (min-width: 600px) {
+      #compass { left:16px; bottom:16px; }
+    }
+    @media (max-width: 599px) {
+      #compass { left:12px; bottom:calc(44% + 12px); }
+      #compass.panel-collapsed { bottom:58px; }
     }
 
     /* ── Loading overlay ── */
@@ -268,9 +282,34 @@
   </div>
 
   <div class="panel-footer">
-    光影建築+ · 陳柏元 · 2026<br>
+    光影建築+ · 陳柏安 · 2026<br>
     Three.js · React Native · Expo
   </div>
+</div>
+
+<!-- Compass rose overlay -->
+<div id="compass">
+  <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="38" fill="rgba(13,17,23,0.78)" stroke="rgba(106,138,106,0.4)" stroke-width="1.5"/>
+    <g id="compass-rose">
+      <!-- tick marks -->
+      <line x1="40" y1="4"  x2="40" y2="10" stroke="rgba(200,200,200,0.4)" stroke-width="1"/>
+      <line x1="40" y1="70" x2="40" y2="76" stroke="rgba(200,200,200,0.4)" stroke-width="1"/>
+      <line x1="4"  y1="40" x2="10" y2="40" stroke="rgba(200,200,200,0.4)" stroke-width="1"/>
+      <line x1="70" y1="40" x2="76" y2="40" stroke="rgba(200,200,200,0.4)" stroke-width="1"/>
+      <!-- N arrow (red) -->
+      <polygon points="40,8 36.5,38 43.5,38" fill="#E04040"/>
+      <!-- S arrow (grey) -->
+      <polygon points="40,72 36.5,42 43.5,42" fill="rgba(160,160,160,0.65)"/>
+      <!-- Center dot -->
+      <circle cx="40" cy="40" r="3.5" fill="#D0D8D0"/>
+      <!-- Cardinal labels -->
+      <text x="40" y="21" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="white" font-weight="bold" font-family="sans-serif">N</text>
+      <text x="40" y="61" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="rgba(200,200,200,0.75)" font-family="sans-serif">S</text>
+      <text x="62" y="40" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="rgba(200,200,200,0.75)" font-family="sans-serif">E</text>
+      <text x="18" y="40" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="rgba(200,200,200,0.75)" font-family="sans-serif">W</text>
+    </g>
+  </svg>
 </div>
 
 <script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
@@ -361,6 +400,9 @@ function updateCamera() {
     camTarget.z + camRadius * Math.sin(camPhi) * Math.cos(camTheta)
   );
   camera.lookAt(camTarget);
+  const rose = document.getElementById('compass-rose');
+  if (rose) rose.setAttribute('transform',
+    `rotate(${(-camTheta * 180 / Math.PI).toFixed(1)}, 40, 40)`);
 }
 updateCamera();
 
@@ -1000,6 +1042,7 @@ window.togglePanel = function() {
   document.getElementById('panel').classList.toggle('collapsed', !panelOpen);
   document.getElementById('toggle-btn').classList.toggle('collapsed', !panelOpen);
   document.getElementById('toggle-btn').textContent = panelOpen ? '✕' : '☰';
+  document.getElementById('compass').classList.toggle('panel-collapsed', !panelOpen);
 };
 
 // ── Init ──────────────────────────────────────────────────
