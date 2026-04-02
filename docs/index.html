@@ -378,18 +378,50 @@ canvas.addEventListener('mousemove', e => {
 canvas.addEventListener('mouseup', () => drag = null);
 canvas.addEventListener('mouseleave', () => drag = null);
 
+// Mouse wheel zoom
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const minR = currentPreset === 'indoor' ? 4 : 15;
+  const maxR = currentPreset === 'indoor' ? 20 : 120;
+  camRadius = Math.max(minR, Math.min(maxR, camRadius * (1 + e.deltaY * 0.001)));
+  updateCamera();
+}, { passive: false });
+
+// Touch: single-finger orbit + two-finger pinch zoom
+let pinchDist = null;
 canvas.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) drag = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  if (e.touches.length === 1) {
+    drag = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    pinchDist = null;
+  } else if (e.touches.length === 2) {
+    drag = null;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    pinchDist = Math.hypot(dx, dy);
+  }
 }, { passive: true });
 canvas.addEventListener('touchmove', e => {
-  if (!drag || e.touches.length !== 1) return;
-  const dx = e.touches[0].clientX - drag.x, dy = e.touches[0].clientY - drag.y;
-  camTheta -= dx * 0.007;
-  camPhi = Math.max(0.10, Math.min(1.48, camPhi + dy * 0.007));
-  drag = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  updateCamera();
+  if (e.touches.length === 1 && drag) {
+    const dx = e.touches[0].clientX - drag.x, dy = e.touches[0].clientY - drag.y;
+    camTheta -= dx * 0.007;
+    camPhi = Math.max(0.10, Math.min(1.48, camPhi + dy * 0.007));
+    drag = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    updateCamera();
+  } else if (e.touches.length === 2 && pinchDist !== null) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const newDist = Math.hypot(dx, dy);
+    const minR = currentPreset === 'indoor' ? 4 : 15;
+    const maxR = currentPreset === 'indoor' ? 20 : 120;
+    camRadius = Math.max(minR, Math.min(maxR, camRadius * (pinchDist / newDist)));
+    pinchDist = newDist;
+    updateCamera();
+  }
 }, { passive: true });
-canvas.addEventListener('touchend', () => drag = null);
+canvas.addEventListener('touchend', e => {
+  if (e.touches.length === 0) { drag = null; pinchDist = null; }
+  else if (e.touches.length === 1) { drag = { x: e.touches[0].clientX, y: e.touches[0].clientY }; pinchDist = null; }
+});
 
 // Lighting
 const sunLight = new THREE.DirectionalLight(0xFFF5DC, 2.5);
