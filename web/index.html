@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>光影建築+</title>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; background:#0D1117; overflow:hidden;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:#E8E8E8; }
+
+    /* ── Canvas ── */
+    #c { position:fixed; inset:0; width:100%; height:100%; display:block; }
+
+    /* ── Panel ── */
+    #panel {
+      position:fixed; z-index:10;
+      background:rgba(13,17,23,0.88); backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      border:1px solid rgba(106,138,106,0.25);
+      overflow-y:auto; overflow-x:hidden;
+      transition: transform 0.3s ease;
+    }
+
+    /* Desktop: right sidebar */
+    @media (min-width: 600px) {
+      #panel {
+        top:0; right:0; bottom:0; width:300px;
+        border-radius:0; border-right:none; border-top:none; border-bottom:none;
+        border-left:1px solid rgba(106,138,106,0.25);
+      }
+      #panel.collapsed { transform: translateX(300px); }
+      #toggle-btn { right:310px; top:50%; transform:translateY(-50%); border-radius:8px 0 0 8px; }
+      #toggle-btn.collapsed { right:10px; }
+    }
+
+    /* Mobile: bottom sheet */
+    @media (max-width: 599px) {
+      #panel {
+        left:0; right:0; bottom:0; height:52%;
+        border-radius:16px 16px 0 0; border-bottom:none;
+      }
+      #panel.collapsed { transform: translateY(calc(100% - 44px)); }
+      #toggle-btn { left:50%; transform:translateX(-50%); top:auto; bottom:calc(52% + 6px); border-radius:8px; }
+      #toggle-btn.collapsed { bottom:50px; }
+    }
+
+    /* ── Toggle button ── */
+    #toggle-btn {
+      position:fixed; z-index:20;
+      background:rgba(13,17,23,0.9); border:1px solid rgba(106,138,106,0.4);
+      color:#6A8A6A; padding:8px 10px; cursor:pointer; font-size:16px;
+      transition: bottom 0.3s, right 0.3s;
+    }
+
+    /* ── Panel header ── */
+    .panel-header {
+      display:flex; align-items:center; gap:8px; padding:14px 16px 10px;
+      border-bottom:1px solid rgba(106,138,106,0.2);
+      position:sticky; top:0; background:rgba(13,17,23,0.95); z-index:1;
+    }
+    .panel-header .icon { font-size:20px; }
+    .panel-header .title { font-size:15px; font-weight:700; color:#A0C4A0; letter-spacing:0.5px; }
+
+    /* ── Section ── */
+    .section { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .section-label {
+      font-size:10px; letter-spacing:1.5px; color:#6A8A6A; text-transform:uppercase;
+      margin-bottom:8px; font-weight:600;
+    }
+
+    /* ── Preset buttons ── */
+    .preset-row { display:flex; gap:6px; }
+    .preset-btn {
+      flex:1; padding:8px 4px; border:1px solid rgba(106,138,106,0.3);
+      background:rgba(106,138,106,0.08); color:#B0C8B0; border-radius:8px;
+      cursor:pointer; font-size:11px; text-align:center; transition:all 0.15s;
+    }
+    .preset-btn:hover { background:rgba(106,138,106,0.2); }
+    .preset-btn.active { background:rgba(106,138,106,0.3); border-color:#6A8A6A; color:#C8E8C8; }
+    .preset-btn .pb-icon { font-size:18px; display:block; margin-bottom:3px; }
+
+    /* ── City chips ── */
+    .city-scroll { display:flex; gap:5px; overflow-x:auto; padding-bottom:4px; }
+    .city-scroll::-webkit-scrollbar { height:3px; }
+    .city-scroll::-webkit-scrollbar-track { background:transparent; }
+    .city-scroll::-webkit-scrollbar-thumb { background:rgba(106,138,106,0.3); border-radius:2px; }
+    .city-chip {
+      flex-shrink:0; padding:5px 10px; border:1px solid rgba(106,138,106,0.3);
+      background:rgba(106,138,106,0.08); color:#9AB89A; border-radius:20px;
+      cursor:pointer; font-size:11px; white-space:nowrap; transition:all 0.15s;
+    }
+    .city-chip:hover { background:rgba(106,138,106,0.2); }
+    .city-chip.active { background:rgba(106,138,106,0.3); border-color:#6A8A6A; color:#C8E8C8; }
+    .city-lat { font-size:9px; opacity:0.7; }
+
+    /* ── Season buttons ── */
+    .season-row { display:flex; gap:5px; }
+    .season-btn {
+      flex:1; padding:6px 2px; border:1px solid rgba(106,138,106,0.3);
+      background:rgba(106,138,106,0.08); color:#9AB89A; border-radius:6px;
+      cursor:pointer; font-size:11px; text-align:center; transition:all 0.15s;
+    }
+    .season-btn:hover { background:rgba(106,138,106,0.2); }
+    .season-btn.active { background:rgba(106,138,106,0.25); border-color:#6A8A6A; color:#C8E8C8; }
+
+    /* ── Slider ── */
+    .slider-row { display:flex; align-items:center; gap:10px; margin-top:4px; }
+    .slider-label { font-size:12px; color:#9AB89A; min-width:30px; text-align:right; }
+    .slider-val { font-size:12px; color:#C8E8C8; min-width:36px; font-weight:600; }
+    input[type=range] {
+      flex:1; -webkit-appearance:none; height:4px;
+      background:rgba(106,138,106,0.25); border-radius:2px; outline:none; cursor:pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+      background:#6A8A6A; border:2px solid #C8E8C8; cursor:pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width:16px; height:16px; border-radius:50%;
+      background:#6A8A6A; border:2px solid #C8E8C8; cursor:pointer; border:none;
+    }
+
+    /* ── Orientation ── */
+    .orient-row { display:flex; gap:5px; }
+    .orient-btn {
+      flex:1; padding:7px 2px; border:1px solid rgba(106,138,106,0.3);
+      background:rgba(106,138,106,0.08); color:#9AB89A; border-radius:6px;
+      cursor:pointer; font-size:12px; text-align:center; transition:all 0.15s;
+    }
+    .orient-btn:hover { background:rgba(106,138,106,0.2); }
+    .orient-btn.active { background:rgba(106,138,106,0.3); border-color:#6A8A6A; color:#C8E8C8; }
+
+    /* ── Info panel ── */
+    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .info-item {
+      background:rgba(106,138,106,0.08); border:1px solid rgba(106,138,106,0.15);
+      border-radius:8px; padding:8px 10px;
+    }
+    .info-item .lbl { font-size:9px; color:#6A8A6A; letter-spacing:1px; text-transform:uppercase; }
+    .info-item .val { font-size:16px; font-weight:700; color:#C8E8C8; margin-top:2px; }
+    .info-item .unit { font-size:10px; color:#8AB08A; }
+
+    /* ── Footer ── */
+    .panel-footer {
+      padding:10px 16px 16px; text-align:center;
+      font-size:10px; color:rgba(106,138,106,0.5);
+    }
+
+    /* ── Loading overlay ── */
+    #loading {
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:#0D1117; flex-direction:column; gap:12px; z-index:100;
+      color:#6A8A6A; font-size:14px;
+    }
+    #loading .spin { font-size:40px; animation: spin 2s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin">🏙</div>
+  <div>載入場景中...</div>
+</div>
+
+<canvas id="c"></canvas>
+
+<button id="toggle-btn" onclick="togglePanel()" title="展開/收起控制面板">☰</button>
+
+<div id="panel">
+  <div class="panel-header">
+    <span class="icon">🌞</span>
+    <span class="title">光影建築+</span>
+  </div>
+
+  <!-- 場景 -->
+  <div class="section">
+    <div class="section-label">場景</div>
+    <div class="preset-row">
+      <button class="preset-btn active" id="btn-taipei101" onclick="setPreset('taipei101')">
+        <span class="pb-icon">🏙</span>台北101
+      </button>
+      <button class="preset-btn" id="btn-ntust" onclick="setPreset('ntust')">
+        <span class="pb-icon">🎓</span>台科大
+      </button>
+      <button class="preset-btn" id="btn-indoor" onclick="setPreset('indoor')">
+        <span class="pb-icon">🏠</span>室內採光
+      </button>
+    </div>
+  </div>
+
+  <!-- 室內朝向 -->
+  <div class="section" id="orient-section" style="display:none">
+    <div class="section-label">窗戶朝向</div>
+    <div class="orient-row">
+      <button class="orient-btn active" id="o-south" onclick="setOrientation('south')">南向</button>
+      <button class="orient-btn" id="o-east"  onclick="setOrientation('east')">東向</button>
+      <button class="orient-btn" id="o-west"  onclick="setOrientation('west')">西向</button>
+      <button class="orient-btn" id="o-north" onclick="setOrientation('north')">北向</button>
+    </div>
+  </div>
+
+  <!-- 城市 -->
+  <div class="section">
+    <div class="section-label">城市</div>
+    <div class="city-scroll" id="city-row"></div>
+  </div>
+
+  <!-- 節氣 -->
+  <div class="section">
+    <div class="section-label">節氣</div>
+    <div class="season-row">
+      <button class="season-btn" onclick="setSeason(12,21)">冬至</button>
+      <button class="season-btn" onclick="setSeason(3,20)">春分</button>
+      <button class="season-btn" onclick="setSeason(6,21)">夏至</button>
+      <button class="season-btn" onclick="setSeason(9,23)">秋分</button>
+    </div>
+  </div>
+
+  <!-- 時間 -->
+  <div class="section">
+    <div class="section-label">時間</div>
+    <div class="slider-row">
+      <span class="slider-label">時</span>
+      <input type="range" id="hour-slider" min="5" max="19" step="0.25" value="12"
+        oninput="onHourChange(this.value)">
+      <span class="slider-val" id="hour-val">12:00</span>
+    </div>
+  </div>
+
+  <!-- 月份 -->
+  <div class="section">
+    <div class="section-label">月份</div>
+    <div class="slider-row">
+      <span class="slider-label">月</span>
+      <input type="range" id="month-slider" min="1" max="12" step="1" value="6"
+        oninput="onMonthChange(this.value)">
+      <span class="slider-val" id="month-val">6月</span>
+    </div>
+  </div>
+
+  <!-- 資訊 -->
+  <div class="section">
+    <div class="section-label">即時資訊</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="lbl">高度角</div>
+        <div class="val" id="info-alt">—</div>
+        <div class="unit">度</div>
+      </div>
+      <div class="info-item">
+        <div class="lbl">方位角</div>
+        <div class="val" id="info-az">—</div>
+        <div class="unit">度 <span id="info-dir"></span></div>
+      </div>
+      <div class="info-item">
+        <div class="lbl" id="shadow-lbl">陰影長度</div>
+        <div class="val" id="info-shadow">—</div>
+        <div class="unit">公尺</div>
+      </div>
+      <div class="info-item">
+        <div class="lbl">日出 / 日落</div>
+        <div class="val" style="font-size:12px" id="info-riseset">— / —</div>
+        <div class="unit"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-footer">
+    光影建築+ · 陳柏元 · 2026<br>
+    Three.js · React Native · Expo
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.150.0/build/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+// ════════════════════════════════════════════════════════
+// 1. 太陽計算
+// ════════════════════════════════════════════════════════
+const CITIES = [
+  { key:'taipei',    name:'台北',     lat: 25.04,  group:'TW'  },
+  { key:'taichung',  name:'台中',     lat: 24.15,  group:'TW'  },
+  { key:'tainan',    name:'台南',     lat: 22.99,  group:'TW'  },
+  { key:'kaohsiung', name:'高雄',     lat: 22.63,  group:'TW'  },
+  { key:'hualien',   name:'花蓮',     lat: 23.97,  group:'TW'  },
+  { key:'singapore', name:'新加坡',   lat:  1.35,  group:'INT' },
+  { key:'bangkok',   name:'曼谷',     lat: 13.75,  group:'INT' },
+  { key:'tokyo',     name:'東京',     lat: 35.68,  group:'INT' },
+  { key:'london',    name:'倫敦',     lat: 51.51,  group:'INT' },
+  { key:'helsinki',  name:'赫爾辛基', lat: 60.17,  group:'INT' },
+  { key:'sydney',    name:'雪梨',     lat:-33.87,  group:'INT' },
+];
+
+function dayOfYear(month, day) {
+  const d = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+  let n = day;
+  for (let i = 1; i < month; i++) n += d[i];
+  return n;
+}
+
+function calcSun(hour, month, day, lat) {
+  const DEG = Math.PI / 180;
+  const N = dayOfYear(month, day);
+  const dec = 23.45 * Math.sin(DEG * (360 / 365) * (284 + N));
+  const ha = (hour - 12) * 15;
+  const sinAlt = Math.sin(DEG*lat)*Math.sin(DEG*dec) + Math.cos(DEG*lat)*Math.cos(DEG*dec)*Math.cos(DEG*ha);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) / DEG;
+  const cosAlt = Math.cos(DEG * alt);
+  let az = 180;
+  if (cosAlt > 0.0001) {
+    const cosAzS = (Math.sin(DEG*dec) - Math.sin(DEG*lat)*sinAlt) / (Math.cos(DEG*lat)*cosAlt);
+    const azFS = Math.acos(Math.max(-1, Math.min(1, cosAzS))) / DEG;
+    az = ha > 0 ? 360 - azFS : azFS;
+    az = ((az % 360) + 360) % 360;
+  }
+  const cosHA0 = -(Math.tan(DEG*lat) * Math.tan(DEG*dec));
+  let sunrise = 6, sunset = 18;
+  if (Math.abs(cosHA0) <= 1) {
+    const ha0 = Math.acos(cosHA0) / DEG;
+    sunrise = 12 - ha0 / 15;
+    sunset  = 12 + ha0 / 15;
+  }
+  const dirs = ['北','東北','東','東南','南','西南','西','西北','北'];
+  return { alt, az, sunrise, sunset, dir: dirs[Math.round(az/45)] };
+}
+
+function fmt(h) {
+  const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+// ════════════════════════════════════════════════════════
+// 2. Three.js 場景
+// ════════════════════════════════════════════════════════
+const DEG = Math.PI / 180;
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0xA8C4DC, 0.007);
+
+const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.5, 300);
+let camTheta = DEG * 40, camPhi = DEG * 55, camRadius = 65;
+let camTarget = new THREE.Vector3(0, 8, 0);
+
+function updateCamera() {
+  camera.position.set(
+    camTarget.x + camRadius * Math.sin(camPhi) * Math.sin(camTheta),
+    camTarget.y + camRadius * Math.cos(camPhi),
+    camTarget.z + camRadius * Math.sin(camPhi) * Math.cos(camTheta)
+  );
+  camera.lookAt(camTarget);
+}
+updateCamera();
+
+// Touch / Mouse orbit
+let drag = null;
+canvas.addEventListener('mousedown', e => { drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('mousemove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  camTheta -= dx * 0.007;
+  camPhi = Math.max(0.10, Math.min(1.48, camPhi + dy * 0.007));
+  drag = { x: e.clientX, y: e.clientY };
+  updateCamera();
+});
+canvas.addEventListener('mouseup', () => drag = null);
+canvas.addEventListener('mouseleave', () => drag = null);
+
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) drag = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  if (!drag || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - drag.x, dy = e.touches[0].clientY - drag.y;
+  camTheta -= dx * 0.007;
+  camPhi = Math.max(0.10, Math.min(1.48, camPhi + dy * 0.007));
+  drag = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  updateCamera();
+}, { passive: true });
+canvas.addEventListener('touchend', () => drag = null);
+
+// Lighting
+const sunLight = new THREE.DirectionalLight(0xFFF5DC, 2.5);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.near = 1; sunLight.shadow.camera.far = 200;
+sunLight.shadow.camera.left = -55; sunLight.shadow.camera.right = 55;
+sunLight.shadow.camera.top = 55; sunLight.shadow.camera.bottom = -55;
+sunLight.shadow.bias = -0.0006;
+scene.add(sunLight); scene.add(sunLight.target);
+const hemi = new THREE.HemisphereLight(0x9ABCD0, 0xC8B490, 0.6);
+scene.add(hemi);
+
+const sunMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.8, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xFFE055 })
+);
+sunMesh.add(new THREE.Mesh(
+  new THREE.SphereGeometry(1.5, 16, 16),
+  new THREE.MeshBasicMaterial({ color: 0xFFCC00, transparent: true, opacity: 0.22 })
+));
+scene.add(sunMesh);
+
+// Helpers
+function sunDir(az, alt) {
+  return { x: Math.sin(az)*Math.cos(alt), y: Math.sin(alt), z: -Math.cos(az)*Math.cos(alt) };
+}
+function addBox(parent, x, y, z, w, h, d, mat, shadow=true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  if (shadow) { m.castShadow = true; m.receiveShadow = true; }
+  parent.add(m); return m;
+}
+function addCylinder(parent, x, y, z, rt, rb, h, seg, mat) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+  m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m;
+}
+function textLabel(text, w, h) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+  const ctx = cv.getContext('2d');
+  ctx.font = 'bold 26px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 32);
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false }));
+}
+function compassLabel(text, x, z, rotZ) {
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
+  const ctx = cv.getContext('2d');
+  ctx.font = 'bold 30px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 64, 32);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.5),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.rotation.z = rotZ || 0;
+  m.position.set(x, 0.05, z); return m;
+}
+function addTree(parent, x, z) {
+  const matT = new THREE.MeshLambertMaterial({ color: 0x7A5828 });
+  const matL1 = new THREE.MeshLambertMaterial({ color: 0x3A6820 });
+  const matL2 = new THREE.MeshLambertMaterial({ color: 0x285018 });
+  const th = 1.0 + Math.random() * 0.6;
+  addCylinder(parent, x, th/2, z, 0.11, 0.17, th, 6, matT);
+  const ch = 1.6 + Math.random() * 0.5;
+  const c1 = new THREE.Mesh(new THREE.ConeGeometry(0.85, ch, 7), matL1);
+  c1.position.set(x, th + ch*0.5, z); c1.castShadow = true; parent.add(c1);
+  const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, ch*0.65, 7), matL2);
+  c2.position.set(x, th + ch*0.85, z); c2.castShadow = true; parent.add(c2);
+}
+function addWindowBand(parent, bx, bz, bw, bd, y, mat) {
+  [[0,bd/2+0.02,0],[0,-bd/2-0.02,Math.PI],[bw/2+0.02,0,Math.PI/2],[-bw/2-0.02,0,-Math.PI/2]].forEach(([ox,oz,ry]) => {
+    const ww = oz !== 0 ? bw*0.72 : bd*0.72;
+    const wm = new THREE.Mesh(new THREE.PlaneGeometry(ww, 0.7), mat);
+    wm.position.set(bx+ox, y, bz+oz); wm.rotation.y = ry; parent.add(wm);
+  });
+}
+
+// Groups
+const group101    = new THREE.Group(); scene.add(group101);
+const groupNTUST  = new THREE.Group(); scene.add(groupNTUST);
+const groupIndoor = new THREE.Group(); scene.add(groupIndoor);
+groupNTUST.visible  = false;
+groupIndoor.visible = false;
+let MAIN_H_REF = 38;
+
+// ── Scene A: 台北101 ──────────────────────────────────────────
+function buildTaipei101() {
+  const g = group101;
+  const matGnd  = new THREE.MeshLambertMaterial({ color: 0xC0AC90 });
+  const matRoad = new THREE.MeshLambertMaterial({ color: 0x686860 });
+  const matSW   = new THREE.MeshLambertMaterial({ color: 0xA89878 });
+  const matRoof = new THREE.MeshLambertMaterial({ color: 0x7A8888 });
+  const matWin  = new THREE.MeshLambertMaterial({ color: 0x607888, transparent:true, opacity:0.75 });
+  const matBldg = [0xE8DDD0,0xDED2C0,0xD8CAB8,0xE4D8C8,0xCEC2B2].map(c=>new THREE.MeshLambertMaterial({color:c}));
+
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(80,80), matGnd);
+  gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; g.add(gnd);
+
+  [[0,-3.5,80,3.0],[0,3.5,80,3.0],[-3.5,0,3.0,80],[3.5,0,3.0,80],[0,0,3.0,3.0]].forEach(([x,z,w,d])=>{
+    const r=new THREE.Mesh(new THREE.PlaneGeometry(w,d),matRoad);
+    r.rotation.x=-Math.PI/2; r.position.set(x,0.01,z); r.receiveShadow=true; g.add(r);
+  });
+  [[0,-2.0,80,0.8],[0,2.0,80,0.8],[-2.0,0,0.8,80],[2.0,0,0.8,80]].forEach(([x,z,w,d])=>{
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(w,d),matSW);
+    s.rotation.x=-Math.PI/2; s.position.set(x,0.02,z); s.receiveShadow=true; g.add(s);
+  });
+
+  [{x:-7,z:-7,h:5.5,mi:0},{x:0,z:-7,h:8.0,mi:1},{x:7,z:-7,h:4.5,mi:2},
+   {x:-7,z:0,h:9.5,mi:3},{x:7,z:0,h:7.0,mi:1},
+   {x:-7,z:7,h:4.5,mi:2},{x:0,z:7,h:6.0,mi:0},{x:7,z:7,h:5.5,mi:3}
+  ].forEach(b=>{
+    addBox(g,b.x,b.h/2,b.z,3.8,b.h,3.8,matBldg[b.mi]);
+    addBox(g,b.x,b.h+0.15,b.z,3.95,0.3,3.95,matRoof);
+    const floors=Math.floor(b.h/2.8);
+    for(let f=1;f<=floors;f++) addWindowBand(g,b.x,b.z,3.8,3.8,(f/(floors+1))*b.h,matWin);
+  });
+
+  const mat101=new THREE.MeshLambertMaterial({color:0x5A8878});
+  const mat101L=new THREE.MeshLambertMaterial({color:0x4A7868});
+  const mat101W=new THREE.MeshLambertMaterial({color:0x8ABCB0,transparent:true,opacity:0.7});
+  const matPod=new THREE.MeshLambertMaterial({color:0x8A9090});
+  const matSp=new THREE.MeshLambertMaterial({color:0xCCCCBB});
+
+  addBox(g,0,1.5,0,7.5,3.0,7.5,matPod);
+  const segs=[{w:4.5,h:4.0},{w:4.1,h:4.0},{w:3.7,h:3.8},{w:3.3,h:3.8},
+              {w:3.0,h:3.5},{w:2.7,h:3.5},{w:2.4,h:3.2},{w:2.0,h:3.2}];
+  let yb=3.0;
+  segs.forEach((s,i)=>{
+    addBox(g,0,yb+(s.h-0.4)/2,0,s.w,s.h-0.4,s.w,i%2===0?mat101:mat101L);
+    addBox(g,0,yb+0.175,0,s.w+0.5,0.35,s.w+0.5,mat101L);
+    const rows=Math.floor((s.h-0.4)/1.4);
+    for(let r=1;r<=rows;r++){
+      [0,Math.PI/2,Math.PI,Math.PI*1.5].forEach(ry=>{
+        const wm=new THREE.Mesh(new THREE.PlaneGeometry(s.w*0.75,0.65),mat101W);
+        wm.position.set(Math.sin(ry)*(s.w/2+0.01),yb+(r/(rows+1))*(s.h-0.4),-Math.cos(ry)*(s.w/2+0.01));
+        wm.rotation.y=ry; g.add(wm);
+      });
+    }
+    yb+=s.h;
+  });
+  addCylinder(g,0,yb+1.0,0,0.25,0.35,2.0,8,matSp);
+  addCylinder(g,0,yb+6.0,0,0.04,0.22,8.0,8,matSp);
+  const lbl=textLabel('TAIPEI 101',4.5,1.1);
+  lbl.position.set(0,yb+12,3.5); g.add(lbl);
+
+  [[-5,-5],[5,-5],[-5,5],[5,5],[-14,-14],[14,-14],[-14,14],[14,14],
+   [-14,0],[14,0],[0,-14],[0,14]].forEach(([x,z])=>addTree(g,x,z));
+
+  g.add(compassLabel('N 北',0,-24)); g.add(compassLabel('S 南',0,24));
+  g.add(compassLabel('E 東',24,0,Math.PI/2)); g.add(compassLabel('W 西',-24,0,Math.PI/2));
+}
+
+// ── Scene B: 台科大 ───────────────────────────────────────────
+function buildNTUST() {
+  const g = groupNTUST;
+  const matGnd   = new THREE.MeshLambertMaterial({color:0xC8C0A0});
+  const matPath  = new THREE.MeshLambertMaterial({color:0xDED6BC});
+  const matGrass = new THREE.MeshLambertMaterial({color:0x6A9050});
+  const matRoof  = new THREE.MeshLambertMaterial({color:0x606060});
+  const matWin   = new THREE.MeshLambertMaterial({color:0x5A7888,transparent:true,opacity:0.7});
+  const matRB    = new THREE.MeshLambertMaterial({color:0xD0C8B8});
+  const matTR    = new THREE.MeshLambertMaterial({color:0xA8A098});
+  const matLib   = new THREE.MeshLambertMaterial({color:0xD8D4C8});
+  const matT1    = new THREE.MeshLambertMaterial({color:0xBCB4A4});
+  const matT4    = new THREE.MeshLambertMaterial({color:0xB8B0A0});
+  const matGls   = new THREE.MeshLambertMaterial({color:0x6090AA,transparent:true,opacity:0.7});
+  const matTrack = new THREE.MeshLambertMaterial({color:0xBB4444});
+  const matInner = new THREE.MeshLambertMaterial({color:0x4A6844});
+  const tennisMat= new THREE.MeshLambertMaterial({color:0x4878A0});
+  const bballMat = new THREE.MeshLambertMaterial({color:0xC06830});
+
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(100,100), matGnd);
+  gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; g.add(gnd);
+
+  [[0,5,4,56],[-8,-3,4,30],[5,-12,30,4]].forEach(([x,z,w,d])=>{
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(w,d),matPath);
+    p.rotation.x=-Math.PI/2; p.position.set(x,0.01,z); p.receiveShadow=true; g.add(p);
+  });
+  [{x:4,z:13,w:20,d:8},{x:14,z:4,w:8,d:12}].forEach(p=>{
+    const gr=new THREE.Mesh(new THREE.PlaneGeometry(p.w,p.d),matGrass);
+    gr.rotation.x=-Math.PI/2; gr.position.set(p.x,0.02,p.z); gr.receiveShadow=true; g.add(gr);
+  });
+
+  addBox(g,-34,15,-1.5,5.0,30,35.0,matTR);
+  addBox(g,-34,31,-1.5,4.0,2.0,33.0,matTR);
+  addBox(g,-34,32.2,-1.5,3.2,0.4,32.0,matRoof);
+  for(let f=1;f<=10;f++){
+    const wm=new THREE.Mesh(new THREE.PlaneGeometry(33.0,2.2),matGls);
+    wm.position.set(-34,f*2.9-1.0,14.52); wm.rotation.y=Math.PI; g.add(wm);
+  }
+  const trLbl=textLabel('TR 研揚大樓',3.8,0.85);
+  trLbl.position.set(-34,34,-1.5); g.add(trLbl);
+
+  const tennis=new THREE.Mesh(new THREE.PlaneGeometry(14,10),tennisMat);
+  tennis.rotation.x=-Math.PI/2; tennis.position.set(-17,0.03,-14); tennis.receiveShadow=true; g.add(tennis);
+  [-20,-14].forEach(x=>{
+    const line=new THREE.Mesh(new THREE.PlaneGeometry(0.2,10),new THREE.MeshLambertMaterial({color:0xFFFFFF}));
+    line.rotation.x=-Math.PI/2; line.position.set(x,0.04,-14); g.add(line);
+  });
+
+  const bball=new THREE.Mesh(new THREE.PlaneGeometry(16,10),bballMat);
+  bball.rotation.x=-Math.PI/2; bball.position.set(-17,0.03,-2); bball.receiveShadow=true; g.add(bball);
+  const midLine=new THREE.Mesh(new THREE.PlaneGeometry(16,0.2),new THREE.MeshLambertMaterial({color:0xFFFFFF}));
+  midLine.rotation.x=-Math.PI/2; midLine.position.set(-17,0.04,-2); g.add(midLine);
+
+  const trackRect=new THREE.Mesh(new THREE.PlaneGeometry(18,10),matTrack);
+  trackRect.rotation.x=-Math.PI/2; trackRect.position.set(-17,0.03,11); g.add(trackRect);
+  [[-26,11],[-8,11]].forEach(([x,z])=>{
+    const e=new THREE.Mesh(new THREE.CircleGeometry(5,32),matTrack);
+    e.rotation.x=-Math.PI/2; e.position.set(x,0.03,z); g.add(e);
+  });
+  const inner1=new THREE.Mesh(new THREE.PlaneGeometry(18,6),matInner);
+  inner1.rotation.x=-Math.PI/2; inner1.position.set(-17,0.04,11); g.add(inner1);
+  [[-26,11],[-8,11]].forEach(([x,z])=>{
+    const e=new THREE.Mesh(new THREE.CircleGeometry(3,32),matInner);
+    e.rotation.x=-Math.PI/2; e.position.set(x,0.04,z); g.add(e);
+  });
+
+  addBox(g,-9,10,-4,3.5,20,18,matT1);
+  addBox(g,-9,20.2,-4,3.7,0.4,18.2,matRoof);
+  const t1Lbl=textLabel('T1',2.0,0.75); t1Lbl.position.set(-9,22,-4); g.add(t1Lbl);
+
+  addBox(g,-3,4,-8,6.0,8,5.5,matT4);
+  addBox(g,-3,8.2,-8,6.2,0.4,5.7,matRoof);
+  const auLbl=textLabel('AU 視聽館',2.8,0.7); auLbl.position.set(-3,9.5,-8); g.add(auLbl);
+  const pond=new THREE.Mesh(new THREE.CircleGeometry(1.8,24),new THREE.MeshLambertMaterial({color:0x5090B0}));
+  pond.rotation.x=-Math.PI/2; pond.position.set(-1,0.05,-4); g.add(pond);
+
+  addBox(g,4,12,4,14.0,24,10.0,matRB);
+  addBox(g,4,25.5,4,11.5,3.0,8.0,matRB);
+  addBox(g,4,27.2,4,10.0,0.4,7.0,matRoof);
+  for(let f=1;f<=8;f++) addBox(g,4,f*2.9-0.1,9.3,14.2,0.2,0.55,matRoof);
+  for(let f=1;f<=8;f++){
+    const wm=new THREE.Mesh(new THREE.PlaneGeometry(12,2.4),matGls);
+    wm.position.set(4,f*2.9-1.2,9.02); g.add(wm);
+  }
+  const rbLbl=textLabel('RB 建築系 8F',5.0,1.0); rbLbl.position.set(4,29.5,5.5); g.add(rbLbl);
+
+  addBox(g,16,14,2,8.0,28,10.0,matLib);
+  addBox(g,16,28.2,2,8.2,0.4,10.2,matRoof);
+  addBox(g,11.95,6,2,0.3,12,6.0,matGls);
+  for(let f=1;f<=8;f++) addWindowBand(g,16,2,8.0,10.0,f*3.2,matWin);
+  const libLbl=textLabel('圖書館 Library',4.2,0.9); libLbl.position.set(16,30,2); g.add(libLbl);
+
+  addBox(g,5,8,-16,12.0,16,7.0,matT4);
+  addBox(g,5,16.2,-16,12.2,0.4,7.2,matRoof);
+  for(let f=1;f<=5;f++) addWindowBand(g,5,-16,12.0,7.0,f*3.0,matWin);
+  const t4Lbl=textLabel('T4',2.5,0.75); t4Lbl.position.set(5,18,-16); g.add(t4Lbl);
+
+  addBox(g,4,2.5,24,16.0,0.5,0.8,matRoof);
+  addBox(g,-4,1.25,24,0.8,2.5,0.8,matRoof);
+  addBox(g,12,1.25,24,0.8,2.5,0.8,matRoof);
+  const gateLbl=textLabel('國立臺灣科技大學',7.0,1.1); gateLbl.position.set(4,3.8,24); g.add(gateLbl);
+
+  [[0,20],[8,20],[-4,18],[14,16],[20,8],[20,-4],[10,-20],[-2,-20],
+   [-14,-18],[-16,-8],[-16,4],[-28,0],[-28,8],[-28,-8],[-4,0],[12,12]
+  ].forEach(([x,z])=>addTree(g,x,z));
+
+  g.add(compassLabel('N 北',0,-30)); g.add(compassLabel('S 南',0,30));
+  g.add(compassLabel('E 東',30,0,Math.PI/2)); g.add(compassLabel('W 西',-30,0,Math.PI/2));
+}
+
+// ── Scene C: 室內採光 ─────────────────────────────────────────
+function buildIndoor() {
+  const g = groupIndoor;
+  const matWall  = new THREE.MeshLambertMaterial({color:0xEEE8DE,side:THREE.DoubleSide});
+  const matFloor = new THREE.MeshLambertMaterial({color:0xD4C6A8});
+  const matGnd   = new THREE.MeshLambertMaterial({color:0x848478});
+  const matGlass = new THREE.MeshLambertMaterial({color:0x88AABB,transparent:true,opacity:0.18,side:THREE.DoubleSide});
+  const matPerson= new THREE.MeshLambertMaterial({color:0x8090A8});
+
+  const extGnd=new THREE.Mesh(new THREE.PlaneGeometry(40,30),matGnd);
+  extGnd.rotation.x=-Math.PI/2; extGnd.position.set(0,0,7); extGnd.receiveShadow=true; g.add(extGnd);
+
+  const floorMesh=new THREE.Mesh(new THREE.PlaneGeometry(8.0,6.0),matFloor);
+  floorMesh.rotation.x=-Math.PI/2; floorMesh.position.set(0,0.01,-3); floorMesh.receiveShadow=true; g.add(floorMesh);
+  const grid=new THREE.GridHelper(6,6,0xB8A888,0xC8B898);
+  grid.position.set(0,0.02,-3); g.add(grid);
+
+  addBox(g,0,3.05,-3,8.0,0.1,6.0,matWall);
+  addBox(g,0,1.5,-6.05,8.0,3.0,0.1,matWall);
+  addBox(g,-4.05,1.5,-3,0.1,3.0,6.0,matWall);
+  addBox(g,4.05,1.5,-3,0.1,3.0,6.0,matWall);
+  addBox(g,-3.5,1.5,0.05,1.0,3.0,0.1,matWall);
+  addBox(g,3.5,1.5,0.05,1.0,3.0,0.1,matWall);
+  addBox(g,0,0.45,0.05,6.0,0.9,0.1,matWall);
+  addBox(g,0,2.85,0.05,6.0,0.3,0.1,matWall);
+
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(6.0,1.8),matGlass);
+  glass.position.set(0,1.8,0.06); g.add(glass);
+
+  const winGeo=new THREE.EdgesGeometry(new THREE.BoxGeometry(6.0,1.8,0.05));
+  const winEdge=new THREE.LineSegments(winGeo,new THREE.LineBasicMaterial({color:0xFFAA44,transparent:true,opacity:0.9}));
+  winEdge.position.set(0,1.8,0.06); g.add(winEdge);
+
+  addBox(g,2.5,0.85,-1.0,0.35,1.7,0.35,matPerson);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8),matPerson);
+  head.position.set(2.5,1.85,-1.0); g.add(head);
+}
+
+buildTaipei101(); buildNTUST(); buildIndoor();
+
+// Sun path & shadow line
+let pathLine = null, shadowLine = null;
+function buildSunPath(month, lat) {
+  if (pathLine) { scene.remove(pathLine); pathLine.geometry.dispose(); }
+  const pts=[], N=dayOfYear(month,15), dec=23.45*Math.sin(DEG*(360/365)*(284+N));
+  for(let h=4.5;h<=19.5;h+=0.25){
+    const ha=(h-12)*15;
+    const sinAlt=Math.sin(DEG*lat)*Math.sin(DEG*dec)+Math.cos(DEG*lat)*Math.cos(DEG*dec)*Math.cos(DEG*ha);
+    const alt=Math.asin(Math.max(-1,Math.min(1,sinAlt)))/DEG;
+    if(alt<=0) continue;
+    const cosAlt=Math.cos(DEG*alt);
+    const cosAzS=(Math.sin(DEG*dec)-Math.sin(DEG*lat)*sinAlt)/(Math.cos(DEG*lat)*Math.max(0.001,cosAlt));
+    let az=Math.acos(Math.max(-1,Math.min(1,cosAzS)))/DEG;
+    if(ha>0) az=360-az; az=((az%360)+360)%360;
+    const sd=sunDir(az*DEG,alt*DEG);
+    pts.push(new THREE.Vector3(sd.x*38,sd.y*38,sd.z*38));
+  }
+  if(pts.length<2) return;
+  pathLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xFFAA44,transparent:true,opacity:0.5}));
+  scene.add(pathLine);
+}
+function updateShadowLine(azDeg, altDeg) {
+  if(shadowLine){scene.remove(shadowLine);shadowLine.geometry.dispose();}
+  if(altDeg<=0.5) return;
+  const len=MAIN_H_REF/Math.tan(altDeg*DEG);
+  const saz=(azDeg+180)*DEG;
+  const pts=[new THREE.Vector3(0,0.05,0),new THREE.Vector3(Math.sin(saz)*len,0.05,-Math.cos(saz)*len)];
+  shadowLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xFF6644,transparent:true,opacity:0.7}));
+  scene.add(shadowLine);
+}
+
+// Sky
+const cDay=new THREE.Color(0x87CEEB),cDawn=new THREE.Color(0xFF7040),
+      cTwi=new THREE.Color(0x253050),cNight=new THREE.Color(0x0D1117);
+
+function applyScene(azDeg, altDeg, month, lat) {
+  const isIndoor = currentPreset === 'indoor';
+  const sd=sunDir(azDeg*DEG,altDeg*DEG), dist=50;
+  if(altDeg>0){
+    sunLight.position.set(sd.x*dist,sd.y*dist,sd.z*dist);
+    sunLight.target.position.set(0,0,0); sunLight.target.updateMatrixWorld();
+    sunLight.intensity=isIndoor?1.5+Math.sin(altDeg*DEG)*2.5:0.5+Math.sin(altDeg*DEG)*2.2;
+    sunLight.color.setHex(altDeg<20?0xFF9050:0xFFF5DC);
+    sunMesh.visible=!isIndoor;
+    if(!isIndoor){sunMesh.position.set(sd.x*43,sd.y*43,sd.z*43);sunMesh.material.color.setHex(altDeg<15?0xFF7030:0xFFE055);}
+  } else { sunLight.intensity=0; sunMesh.visible=false; }
+  hemi.intensity=isIndoor?0.30:Math.max(0.05,0.08+Math.max(0,Math.sin(altDeg*DEG))*0.65);
+  let sky;
+  if(altDeg<=-5) sky=cNight.clone();
+  else if(altDeg<=0) sky=cNight.clone().lerp(cTwi,(altDeg+5)/5);
+  else if(altDeg<=12) sky=cTwi.clone().lerp(cDawn,altDeg/6).lerp(cDay,altDeg/12);
+  else sky=cDay.clone();
+  scene.background=sky;
+  scene.fog.density=isIndoor?0:0.007;
+  scene.fog.color.copy(sky.clone().lerp(new THREE.Color(0xC8DCF0),0.5));
+  if(!isIndoor){
+    buildSunPath(month,lat); updateShadowLine(azDeg,altDeg);
+  } else {
+    if(pathLine){pathLine.visible=false;}
+    if(shadowLine){scene.remove(shadowLine);shadowLine.geometry.dispose();shadowLine=null;}
+  }
+}
+
+// Animate
+(function loop(){ requestAnimationFrame(loop); renderer.render(scene,camera); })();
+window.addEventListener('resize',()=>{
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+});
+
+// ════════════════════════════════════════════════════════
+// 3. UI State
+// ════════════════════════════════════════════════════════
+let currentPreset = 'taipei101';
+let currentCity = CITIES[0];
+let currentOrientation = 'south';
+let currentHour = 12;
+let currentMonth = 6;
+let currentDay = 15;
+
+function compute() {
+  const s = calcSun(currentHour, currentMonth, currentDay, currentCity.lat);
+  applyScene(s.az, s.alt, currentMonth, currentCity.lat);
+  updateHUD(s);
+}
+
+function updateHUD(s) {
+  document.getElementById('info-alt').textContent = s.alt > 0 ? s.alt.toFixed(1) : '日落';
+  document.getElementById('info-az').textContent  = s.alt > 0 ? s.az.toFixed(1)  : '—';
+  document.getElementById('info-dir').textContent = s.alt > 0 ? s.dir : '';
+  document.getElementById('info-riseset').textContent = fmt(s.sunrise) + ' / ' + fmt(s.sunset);
+
+  if (currentPreset === 'indoor') {
+    document.getElementById('shadow-lbl').textContent = '光線進深';
+    if (s.alt > 0.5) {
+      const depth = 2.7 / Math.tan(s.alt * DEG);
+      document.getElementById('info-shadow').textContent = Math.min(depth, 6).toFixed(1);
+    } else {
+      document.getElementById('info-shadow').textContent = '0.0';
+    }
+  } else {
+    document.getElementById('shadow-lbl').textContent = '陰影長度';
+    if (s.alt > 0.5) {
+      const len = MAIN_H_REF / Math.tan(s.alt * DEG);
+      document.getElementById('info-shadow').textContent = len.toFixed(0);
+    } else {
+      document.getElementById('info-shadow').textContent = '—';
+    }
+  }
+}
+
+// Preset
+window.setPreset = function(p) {
+  currentPreset = p;
+  group101.visible    = (p === 'taipei101');
+  groupNTUST.visible  = (p === 'ntust');
+  groupIndoor.visible = (p === 'indoor');
+
+  if (p === 'ntust') {
+    MAIN_H_REF = 24; camRadius = 75; camTarget.set(0,10,2);
+    camTheta = DEG*40; camPhi = DEG*55;
+    sunLight.shadow.camera.left=-55;sunLight.shadow.camera.right=55;
+    sunLight.shadow.camera.top=55;sunLight.shadow.camera.bottom=-55;
+  } else if (p === 'indoor') {
+    MAIN_H_REF = 3; camRadius = 12; camTarget.set(0,1.5,-2);
+    camTheta = DEG*18; camPhi = DEG*82;
+    sunLight.shadow.camera.left=-10;sunLight.shadow.camera.right=10;
+    sunLight.shadow.camera.top=10;sunLight.shadow.camera.bottom=-10;
+  } else {
+    MAIN_H_REF = 38; camRadius = 65; camTarget.set(0,8,0);
+    camTheta = DEG*40; camPhi = DEG*55;
+    sunLight.shadow.camera.left=-55;sunLight.shadow.camera.right=55;
+    sunLight.shadow.camera.top=55;sunLight.shadow.camera.bottom=-55;
+  }
+  sunLight.shadow.camera.updateProjectionMatrix();
+  updateCamera();
+
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + p).classList.add('active');
+  document.getElementById('orient-section').style.display = (p === 'indoor') ? 'block' : 'none';
+  compute();
+};
+
+// Orientation
+window.setOrientation = function(o) {
+  currentOrientation = o;
+  const map = { south:0, east:Math.PI/2, west:-Math.PI/2, north:Math.PI };
+  groupIndoor.rotation.y = map[o] || 0;
+  document.querySelectorAll('.orient-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('o-' + o).classList.add('active');
+  compute();
+};
+
+// City
+function buildCityRow() {
+  const row = document.getElementById('city-row');
+  CITIES.forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'city-chip' + (c.key === currentCity.key ? ' active' : '');
+    chip.id = 'city-' + c.key;
+    const latStr = (c.lat >= 0 ? c.lat.toFixed(1)+'°N' : Math.abs(c.lat).toFixed(1)+'°S');
+    chip.innerHTML = c.name + '<span class="city-lat"> ' + latStr + '</span>';
+    chip.onclick = () => {
+      currentCity = c;
+      document.querySelectorAll('.city-chip').forEach(b=>b.classList.remove('active'));
+      chip.classList.add('active');
+      compute();
+    };
+    row.appendChild(chip);
+  });
+}
+
+// Season
+window.setSeason = function(m, d) {
+  currentMonth = m; currentDay = d;
+  document.getElementById('month-slider').value = m;
+  document.getElementById('month-val').textContent = m + '月';
+  compute();
+};
+
+// Sliders
+window.onHourChange = function(v) {
+  currentHour = parseFloat(v);
+  document.getElementById('hour-val').textContent = fmt(currentHour);
+  compute();
+};
+window.onMonthChange = function(v) {
+  currentMonth = parseInt(v); currentDay = 15;
+  document.getElementById('month-val').textContent = v + '月';
+  compute();
+};
+
+// Panel toggle
+let panelOpen = true;
+window.togglePanel = function() {
+  panelOpen = !panelOpen;
+  document.getElementById('panel').classList.toggle('collapsed', !panelOpen);
+  document.getElementById('toggle-btn').classList.toggle('collapsed', !panelOpen);
+  document.getElementById('toggle-btn').textContent = panelOpen ? '✕' : '☰';
+};
+
+// ── Init ──────────────────────────────────────────────────
+buildCityRow();
+applyScene(155, 58, 6, 25.04);   // default: June noon, Taipei
+updateHUD(calcSun(12, 6, 15, 25.04));
+
+document.getElementById('loading').style.display = 'none';
+
+})();
+</script>
+</body>
+</html>
