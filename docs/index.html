@@ -37,11 +37,11 @@
     /* Mobile: bottom sheet */
     @media (max-width: 599px) {
       #panel {
-        left:0; right:0; bottom:0; height:52%;
+        left:0; right:0; bottom:0; height:44%;
         border-radius:16px 16px 0 0; border-bottom:none;
       }
       #panel.collapsed { transform: translateY(calc(100% - 44px)); }
-      #toggle-btn { left:50%; transform:translateX(-50%); top:auto; bottom:calc(52% + 6px); border-radius:8px; }
+      #toggle-btn { left:50%; transform:translateX(-50%); top:auto; bottom:calc(44% + 6px); border-radius:8px; }
       #toggle-btn.collapsed { bottom:50px; }
     }
 
@@ -817,8 +817,8 @@ window.setPreset = function(p) {
     sunLight.shadow.camera.left=-55;sunLight.shadow.camera.right=55;
     sunLight.shadow.camera.top=55;sunLight.shadow.camera.bottom=-55;
   } else if (p === 'indoor') {
-    MAIN_H_REF = 3; camRadius = 12; camTarget.set(0,1.5,-2);
-    camTheta = DEG*18; camPhi = DEG*82;
+    MAIN_H_REF = 3; camRadius = 10; camTarget.set(0,1.5,-1);
+    camTheta = DEG*20; camPhi = DEG*68;
     sunLight.shadow.camera.left=-10;sunLight.shadow.camera.right=10;
     sunLight.shadow.camera.top=10;sunLight.shadow.camera.bottom=-10;
   } else {
