@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "光影建築+",
+    "slug": "shadow-sim",
+    "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "owner": "ericchen1115",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D1117"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ericchen1115.shadowsim",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.ericchen1115.shadowsim",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D1117"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/979100f9-e7d1-4183-b651-2555923dbbfd"
+    },
+    "plugins": [
+      "expo-updates"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "979100f9-e7d1-4183-b651-2555923dbbfd"
+      }
+    }
+  }
+}
