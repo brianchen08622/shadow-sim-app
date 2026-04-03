@@ -571,7 +571,9 @@ export function generateSceneHTML() {
       // 人形比例參考（站在窗邊 1.7m高）
       addBox(g, 2.5, 0.85, -1.0, 0.35, 1.7, 0.35, matPerson);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), matPerson);
-      head.position.set(2.5, 1.85, -1.0); g.add(head);
+      head.position.set(2.5, 1.85, -1.0);
+      head.castShadow = true; head.receiveShadow = true;
+      g.add(head);
     }
 
     // ════════════════════════════════════════════════════════════
