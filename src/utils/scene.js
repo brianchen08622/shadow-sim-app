@@ -938,8 +938,9 @@ export function generateSceneHTML() {
       const sd=sunDir(azDeg*DEG,altDeg*DEG), dist=currentPreset==='ntust'?150:80;
       const tgt = currentPreset === 'ntust' ? new THREE.Vector3(0,0,2) : new THREE.Vector3(0,0,0);
       // 室內：太陽方位與窗戶法線夾角，用smoothstep過渡避免亮度跳變
+      // 高度角>80°時太陽接近天頂，方位角不穩定，強制允許進光
       var windowFactor = 1;
-      if (isIndoor && altDeg > 0) {
+      if (isIndoor && altDeg > 0 && altDeg <= 80) {
         var winNormalAz = ORIENT_AZ[currentOrientation] !== undefined ? ORIENT_AZ[currentOrientation] : 180;
         var diff = Math.abs(azDeg - winNormalAz);
         if (diff > 180) diff = 360 - diff;
