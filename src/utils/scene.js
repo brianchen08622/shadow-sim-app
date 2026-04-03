@@ -937,13 +937,13 @@ export function generateSceneHTML() {
       const isIndoor = currentPreset === 'indoor';
       const sd=sunDir(azDeg*DEG,altDeg*DEG), dist=currentPreset==='ntust'?150:80;
       const tgt = currentPreset === 'ntust' ? new THREE.Vector3(0,0,2) : new THREE.Vector3(0,0,0);
-      // 室內：依太陽方位與窗戶法線夾角計算進光比例（cosine衰減）
+      // 室內：太陽方位是否在窗戶可視範圍內（夾角<90°即可照入）
       var windowFactor = 1;
       if (isIndoor && altDeg > 0) {
         var winNormalAz = ORIENT_AZ[currentOrientation] || 180;
         var diff = Math.abs(azDeg - winNormalAz);
         if (diff > 180) diff = 360 - diff;
-        windowFactor = diff >= 90 ? 0 : Math.cos(diff * DEG);
+        windowFactor = diff >= 90 ? 0 : 1;
       }
       if (altDeg>0) {
         sunLight.position.set(sd.x*dist+tgt.x,sd.y*dist,sd.z*dist+tgt.z);
