@@ -965,7 +965,7 @@ export function generateSceneHTML() {
           sunMesh.material.color.setHex(altDeg<15 ? 0xFF7030 : 0xFFE055);
         }
       } else { sunLight.intensity=0; sunMesh.visible=false; }
-      hemi.intensity = isIndoor ? 0.30 : Math.max(0.05, 0.08+Math.max(0,Math.sin(altDeg*DEG))*0.65);
+      hemi.intensity = isIndoor ? (windowFactor > 0 ? 0.30 : 0.55) : Math.max(0.05, 0.08+Math.max(0,Math.sin(altDeg*DEG))*0.65);
       let sky;
       if      (altDeg<=-5)  sky=cNight.clone();
       else if (altDeg<=0)   sky=cNight.clone().lerp(cTwi,(altDeg+5)/5);
