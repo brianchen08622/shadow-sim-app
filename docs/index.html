@@ -800,10 +800,10 @@ function buildNTUST() {
   const trLbl = textLabel('研揚大樓 TR', 8, 2); trLbl.position.set(40.5,52,-50.5); g.add(trLbl);
 
   // 第一教學 T1
-  addBox(g, 22, 10, 47, 50, 20, 15, matT1);
-  addBox(g, 22, 20.3, 47, 51.5, 0.6, 16.5, matRoof);
-  [4,8,12,16].forEach(y => addWindowBand(g,22,47,50,15,y,matWin));
-  const t1Lbl = textLabel('T1', 4, 1.5); t1Lbl.position.set(22,22,47); g.add(t1Lbl);
+  addBox(g, 22, 5, 47, 50, 10, 15, matT1);
+  addBox(g, 22, 10.3, 47, 51.5, 0.6, 16.5, matRoof);
+  [3,6,9].forEach(y => addWindowBand(g,22,47,50,15,y,matWin));
+  const t1Lbl = textLabel('T1', 4, 1.5); t1Lbl.position.set(22,12,47); g.add(t1Lbl);
 
   // 視聽館 AU
   addBox(g, 35, 3, 72, 8, 6, 8, matAU);
@@ -812,28 +812,38 @@ function buildNTUST() {
   const auLbl = textLabel('視聽館 AU', 5, 1.5); auLbl.position.set(35,8,72); g.add(auLbl);
 
   // 第四教學 T4
-  addBox(g, 51.5, 10, 82, 15, 20, 42, matT4);
-  addBox(g, 51.5, 20.3, 82, 16.5, 0.6, 43.5, matRoof);
-  [4,8,12,16].forEach(y => addWindowBand(g,51.5,82,15,42,y,matWin));
-  const t4Lbl = textLabel('T4', 4, 1.5); t4Lbl.position.set(51.5,22,82); g.add(t4Lbl);
+  addBox(g, 51.5, 5, 82, 15, 10, 42, matT4);
+  addBox(g, 51.5, 10.3, 82, 16.5, 0.6, 43.5, matRoof);
+  [3,6,9].forEach(y => addWindowBand(g,51.5,82,15,42,y,matWin));
+  const t4Lbl = textLabel('T4', 4, 1.5); t4Lbl.position.set(51.5,12,82); g.add(t4Lbl);
 
-  // 綜合研究 RB
+  // 綜合研究 RB（8F 建築系）
   addBox(g, 18.5, 10, 73.5, 17, 20, 31, matRB);
   addBox(g, 18.5, 20.3, 73.5, 18.5, 0.6, 32.5, matRoof);
   [4,8,12,16].forEach(y => addWindowBand(g,18.5,73.5,17,31,y,matWin));
+  // 8F 建築系發光標示帶
+  var matGlow = new THREE.MeshBasicMaterial({color:0xFFAA44, transparent:true, opacity:0.6});
+  [[0,31/2+0.02,0],[0,-31/2-0.02,Math.PI],[17/2+0.02,0,Math.PI/2],[-17/2-0.02,0,-Math.PI/2]].forEach(function(f){
+    var glow = new THREE.Mesh(new THREE.PlaneGeometry(f[2]===Math.PI/2||f[2]===-Math.PI/2?31:17, 2.5), matGlow);
+    glow.position.set(18.5+f[0], 19, 73.5+f[1]); glow.rotation.y = f[2]; g.add(glow);
+  });
+  var matGlowEdge = new THREE.LineBasicMaterial({color:0xFFAA44, transparent:true, opacity:0.8});
+  var glowPts = [new THREE.Vector3(18.5-17/2,20.2,73.5-31/2),new THREE.Vector3(18.5+17/2,20.2,73.5-31/2),
+    new THREE.Vector3(18.5+17/2,20.2,73.5+31/2),new THREE.Vector3(18.5-17/2,20.2,73.5+31/2),new THREE.Vector3(18.5-17/2,20.2,73.5-31/2)];
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(glowPts), matGlowEdge));
   const rbLbl = textLabel('綜合研究大樓 RB', 8, 1.5); rbLbl.position.set(18.5,22,73.5); g.add(rbLbl);
 
   // 圖書館
-  addBox(g, 25.5, 10, 97, 30, 20, 15, matLib);
-  addBox(g, 25.5, 20.3, 97, 31.5, 0.6, 16.5, matRoof);
-  [4,8,12,16].forEach(y => addWindowBand(g,25.5,97,30,15,y,matWin));
-  const libLbl = textLabel('圖書館', 5, 1.5); libLbl.position.set(25.5,22,97); g.add(libLbl);
+  addBox(g, 25.5, 5, 97, 30, 10, 15, matLib);
+  addBox(g, 25.5, 10.3, 97, 31.5, 0.6, 16.5, matRoof);
+  [3,6,9].forEach(y => addWindowBand(g,25.5,97,30,15,y,matWin));
+  const libLbl = textLabel('圖書館', 5, 1.5); libLbl.position.set(25.5,12,97); g.add(libLbl);
 
   // 工程一館 E1
-  addBox(g, 69, 8.5, 82, 8, 17, 42, matE1);
-  addBox(g, 69, 17.3, 82, 9.5, 0.6, 43.5, matRoof);
-  [4,9,13].forEach(y => addWindowBand(g,69,82,8,42,y,matWin));
-  const e1Lbl = textLabel('E1', 4, 1.5); e1Lbl.position.set(69,19,82); g.add(e1Lbl);
+  addBox(g, 69, 4.25, 82, 8, 8.5, 42, matE1);
+  addBox(g, 69, 8.8, 82, 9.5, 0.6, 43.5, matRoof);
+  [3,6].forEach(y => addWindowBand(g,69,82,8,42,y,matWin));
+  const e1Lbl = textLabel('E1', 4, 1.5); e1Lbl.position.set(69,10,82); g.add(e1Lbl);
 
   // Trees
   [[-5,-45],[-5,-25],[-5,0],[5,-50],[-8,20],
@@ -1384,10 +1394,20 @@ function applyScene(azDeg, altDeg, month, lat) {
   const sd=sunDir(azDeg*DEG,altDeg*DEG), dist=currentPreset==='ntust'?150:(currentPreset==='custom'?120:80);
   // NTUST 場景以校園中心為基準（TR西、圖書館東、RB中東偏南）
   const tgt = currentPreset === 'ntust' ? new THREE.Vector3(0,0,2) : new THREE.Vector3(0,0,0);
+  // 室內：檢查太陽是否能照進窗戶
+  var canEnterWindow = true;
+  if (isIndoor && altDeg > 0) {
+    var ORIENT_AZ = { south: 180, east: 90, west: 270, north: 0 };
+    var winNormalAz = ORIENT_AZ[currentOrientation] || 180;
+    var diff = Math.abs(azDeg - winNormalAz);
+    if (diff > 180) diff = 360 - diff;
+    canEnterWindow = diff < 90;
+  }
   if(altDeg>0){
     sunLight.position.set(sd.x*dist+tgt.x, sd.y*dist, sd.z*dist+tgt.z);
     sunLight.target.position.copy(tgt); sunLight.target.updateMatrixWorld();
-    sunLight.intensity=isIndoor?1.5+Math.sin(altDeg*DEG)*2.5:0.5+Math.sin(altDeg*DEG)*2.2;
+    var baseInt=isIndoor?1.5+Math.sin(altDeg*DEG)*2.5:0.5+Math.sin(altDeg*DEG)*2.2;
+    sunLight.intensity=(isIndoor && !canEnterWindow)?0.15:baseInt;
     if(!isIndoor){
       var shadowSize=Math.max(60,Math.min(300,MAIN_H_REF/Math.max(0.05,Math.tan(altDeg*DEG))+30));
       sunLight.shadow.camera.left=-shadowSize;sunLight.shadow.camera.right=shadowSize;
@@ -1448,7 +1468,10 @@ function updateHUD(s) {
 
   if (currentPreset === 'indoor') {
     document.getElementById('shadow-lbl').textContent = '光線進深';
-    if (s.alt > 0.5) {
+    var oAzMap = { south: 180, east: 90, west: 270, north: 0 };
+    var wAz = oAzMap[currentOrientation] || 180;
+    var aDiff = Math.abs(s.az - wAz); if (aDiff > 180) aDiff = 360 - aDiff;
+    if (s.alt > 0.5 && aDiff < 90) {
       const depth = 2.7 / Math.tan(s.alt * DEG);
       document.getElementById('info-shadow').textContent = Math.min(depth, 6).toFixed(1);
     } else {
