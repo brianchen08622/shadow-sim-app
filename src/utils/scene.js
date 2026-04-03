@@ -952,6 +952,7 @@ export function generateSceneHTML() {
         sunLight.intensity = isIndoor ? 0.15 + baseIntensity * windowFactor : baseIntensity;
         if (!isIndoor) {
           var shadowSize = Math.max(60, Math.min(300, MAIN_H_REF / Math.max(0.05, Math.tan(altDeg*DEG)) + 30));
+          if (currentPreset === 'ntust') shadowSize = Math.max(shadowSize, 200);
           sunLight.shadow.camera.left = -shadowSize; sunLight.shadow.camera.right = shadowSize;
           sunLight.shadow.camera.top = shadowSize; sunLight.shadow.camera.bottom = -shadowSize;
           sunLight.shadow.camera.updateProjectionMatrix();
