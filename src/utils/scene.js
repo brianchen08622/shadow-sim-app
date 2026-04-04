@@ -1018,7 +1018,7 @@ export function generateSceneHTML() {
           updateCamera();
         }
         if (d.orientation !== undefined && currentPreset === 'indoor') {
-          const orientMap = { south: 0, east: Math.PI/2, west: -Math.PI/2, north: Math.PI };
+          const orientMap = { south: 0, se: -Math.PI/4, east: Math.PI/2, ne: Math.PI*3/4, north: Math.PI, nw: -Math.PI*3/4, west: -Math.PI/2, sw: Math.PI/4 };
           groupIndoor.rotation.y = orientMap[d.orientation] !== undefined ? orientMap[d.orientation] : 0;
           currentOrientation = d.orientation;
         }

@@ -217,10 +217,14 @@
   <div class="section" id="orient-section" style="display:none">
     <div class="section-label">窗戶朝向</div>
     <div class="orient-row">
-      <button class="orient-btn active" id="o-south" onclick="setOrientation('south')">南向</button>
-      <button class="orient-btn" id="o-east"  onclick="setOrientation('east')">東向</button>
-      <button class="orient-btn" id="o-west"  onclick="setOrientation('west')">西向</button>
-      <button class="orient-btn" id="o-north" onclick="setOrientation('north')">北向</button>
+      <button class="orient-btn active" id="o-south" onclick="setOrientation('south')">南</button>
+      <button class="orient-btn" id="o-se"    onclick="setOrientation('se')">東南</button>
+      <button class="orient-btn" id="o-east"  onclick="setOrientation('east')">東</button>
+      <button class="orient-btn" id="o-ne"    onclick="setOrientation('ne')">東北</button>
+      <button class="orient-btn" id="o-north" onclick="setOrientation('north')">北</button>
+      <button class="orient-btn" id="o-nw"    onclick="setOrientation('nw')">西北</button>
+      <button class="orient-btn" id="o-west"  onclick="setOrientation('west')">西</button>
+      <button class="orient-btn" id="o-sw"    onclick="setOrientation('sw')">西南</button>
     </div>
   </div>
 
@@ -1461,7 +1465,7 @@ function updateHUD(s) {
 
   if (currentPreset === 'indoor') {
     document.getElementById('shadow-lbl').textContent = '光線進深';
-    var oAzMap = { south: 180, east: 90, west: 270, north: 0 };
+    var oAzMap = { south: 180, se: 135, east: 90, ne: 45, north: 0, nw: 315, west: 270, sw: 225 };
     var wAz = oAzMap[currentOrientation] !== undefined ? oAzMap[currentOrientation] : 180;
     var aDiff = Math.abs(s.az - wAz); if (aDiff > 180) aDiff = 360 - aDiff;
     if (s.alt > 0.5 && (aDiff < 95 || s.alt > 80)) {
@@ -1523,7 +1527,7 @@ window.setPreset = function(p) {
 // Orientation
 window.setOrientation = function(o) {
   currentOrientation = o;
-  const map = { south:0, east:Math.PI/2, west:-Math.PI/2, north:Math.PI };
+  const map = { south:0, se:-Math.PI/4, east:Math.PI/2, ne:Math.PI*3/4, north:Math.PI, nw:-Math.PI*3/4, west:-Math.PI/2, sw:Math.PI/4 };
   groupIndoor.rotation.y = map[o] || 0;
   document.querySelectorAll('.orient-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('o-' + o).classList.add('active');

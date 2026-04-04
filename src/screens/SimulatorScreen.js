@@ -23,10 +23,14 @@ const PRESETS = [
 ];
 
 const ORIENTATIONS = [
-  { key: 'south', label: '南向' },
-  { key: 'east',  label: '東向' },
-  { key: 'west',  label: '西向' },
-  { key: 'north', label: '北向' },
+  { key: 'south', label: '南' },
+  { key: 'se',    label: '東南' },
+  { key: 'east',  label: '東' },
+  { key: 'ne',    label: '東北' },
+  { key: 'north', label: '北' },
+  { key: 'nw',    label: '西北' },
+  { key: 'west',  label: '西' },
+  { key: 'sw',    label: '西南' },
 ];
 
 // ── Custom Slider ──────────────────────────────────────────────────────────────
@@ -104,7 +108,7 @@ export default function SimulatorScreen() {
     : null;
   // 室內：遮陽板高度(2.7m) / tan(altitude) = 光線進深
   // 需檢查太陽方位角與窗戶法線夾角 < 90° 才有直射光
-  const orientAzMap = { south: 180, east: 90, west: 270, north: 0 };
+  const orientAzMap = { south: 180, se: 135, east: 90, ne: 45, north: 0, nw: 315, west: 270, sw: 225 };
   const winNormalAz = orientAzMap[orientation] !== undefined ? orientAzMap[orientation] : 180;
   const azDiff = Math.abs(sun.azimuth - winNormalAz) > 180
     ? 360 - Math.abs(sun.azimuth - winNormalAz)
@@ -768,9 +772,9 @@ const styles = StyleSheet.create({
   presetLabelOn: { color: '#81C784' },
 
   // 方位選擇
-  orientRow: { flexDirection: 'row', gap: 7 },
+  orientRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   orientBtn: {
-    flex: 1, paddingVertical: 6, borderRadius: 8, alignItems: 'center',
+    width: '22%', paddingVertical: 6, borderRadius: 8, alignItems: 'center',
     backgroundColor: '#141A14', borderWidth: 1, borderColor: '#2A2010',
   },
   orientBtnOn: { backgroundColor: '#2A1E08', borderColor: '#FFA726' },
