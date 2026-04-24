@@ -202,7 +202,7 @@
         <span class="pb-icon">🏙</span>台北101
       </button>
       <button class="preset-btn" id="btn-ntust" onclick="setPreset('ntust')">
-        <span class="pb-icon">🎓</span>台科大
+        <span class="pb-icon">🎓</span>模擬校園
       </button>
       <button class="preset-btn" id="btn-indoor" onclick="setPreset('indoor')">
         <span class="pb-icon">🏠</span>室內採光
@@ -377,7 +377,7 @@ const CITIES = [
   { key:'bangkok',   name:'曼谷',     lat: 13.75,  group:'INT' },
   { key:'tokyo',     name:'東京',     lat: 35.68,  group:'INT' },
   { key:'london',    name:'倫敦',     lat: 51.51,  group:'INT' },
-  { key:'helsinki',  name:'赫爾辛基', lat: 60.17,  group:'INT' },
+  { key:'reykjavik', name:'雷克雅維克', lat: 64.13,  group:'INT' },
   { key:'sydney',    name:'雪梨',     lat:-33.87,  group:'INT' },
 ];
 
@@ -733,7 +733,7 @@ function buildTaipei101() {
   g.add(compassLabel('E 東',24,0,Math.PI/2)); g.add(compassLabel('W 西',-24,0,Math.PI/2));
 }
 
-// ── Scene B: 台科大（由編輯器產生）──────────────────────────
+// ── Scene B: 模擬校園（由編輯器產生）──────────────────────────
 function buildNTUST() {
   const g = groupNTUST;
   g.rotation.y = -Math.PI * 0.25;
