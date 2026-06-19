@@ -300,10 +300,9 @@
       <button class="season-btn" onclick="addCustomBuilding()" style="flex:1">＋ 新增</button>
       <button class="season-btn active" id="snap-btn" onclick="toggleSnap()" style="flex:1" title="格點吸附 (點擊開關)">⊞ 5m 格點</button>
     </div>
-    <div style="display:flex;gap:5px;margin-bottom:8px">
-      <button class="season-btn" onclick="runSunlightAnalysis()" style="flex:1;font-size:11px" id="analysis-btn">☀️ 地面</button>
-      <button class="season-btn" onclick="runFloorAnalysis()" style="flex:1;font-size:11px" id="floor-btn">🏢 樓層</button>
-      <button class="season-btn" onclick="clearAllAnalysis()" style="flex:0.5;font-size:11px">清除</button>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button class="season-btn" onclick="runSunlightAnalysis()" style="flex:1" id="analysis-btn">☀️ 日照分析</button>
+      <button class="season-btn" onclick="clearSunlightAnalysis()" style="flex:0.5">清除</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap" id="building-chips"></div>
     <div id="building-editor" style="display:none">
@@ -319,7 +318,6 @@
     </div>
     <div id="spacing-info" style="display:none;margin-top:6px;font-size:11px;color:#4FC3F7"></div>
     <div id="analysis-result" style="display:none;margin-top:6px;font-size:11px;color:#81C784"></div>
-    <div id="floor-result" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid rgba(106,138,106,0.2)"></div>
     <div style="margin-top:8px">
       <div style="display:flex;gap:5px;margin-bottom:5px">
         <input type="text" id="project-name" placeholder="專案名稱…"
@@ -1596,135 +1594,6 @@ function clearSunlightAnalysisInternal() {
   if (resultDiv) { resultDiv.style.display = 'none'; resultDiv.textContent = ''; }
 }
 window.clearSunlightAnalysis = clearSunlightAnalysisInternal;
-
-// ════════════════════════════════════════════════════════
-// 樓層日照分析
-// ════════════════════════════════════════════════════════
-let floorAnalysisGroup = null;
-
-function clearFloorAnalysis() {
-  if (floorAnalysisGroup) {
-    groupCustom.remove(floorAnalysisGroup);
-    floorAnalysisGroup.traverse(function(c) {
-      if (c.geometry) c.geometry.dispose();
-      if (c.material) c.material.dispose();
-    });
-    floorAnalysisGroup = null;
-  }
-  const el = document.getElementById('floor-result');
-  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
-}
-
-window.clearAllAnalysis = function() {
-  clearSunlightAnalysisInternal();
-  clearFloorAnalysis();
-};
-
-window.runFloorAnalysis = function() {
-  clearFloorAnalysis();
-  if (selectedCustomId === null) { alert('請先點選要分析的建築'); return; }
-  const b = customBuildings.find(function(b) { return b.id === selectedCustomId; });
-  if (!b) return;
-
-  const lat = currentCity.lat;
-  const FLOOR_H = 3;
-  const floors = Math.max(1, Math.floor(b.h / FLOOR_H));
-
-  // 只用其他建築的實體（body mesh）做遮蔽
-  const obsMeshes = [];
-  Object.keys(customBuildingMeshes).forEach(function(idStr) {
-    if (Number(idStr) === b.id) return;
-    customBuildingMeshes[idStr].traverse(function(c) {
-      if (c.isMesh && c.userData.buildingId) obsMeshes.push(c);
-    });
-  });
-
-  // 三個代表日期
-  const DATES = [
-    { label: '冬至', month: 12, day: 21 },
-    { label: '春分', month: 3,  day: 20 },
-    { label: '夏至', month: 6,  day: 21 },
-  ];
-
-  // 採樣點：建築南側（地理南 = +Z）三個水平點，每層樓中心高
-  const bR = Math.sqrt(b.w * b.w + b.d * b.d) / 2 + 0.8;
-  const results = [];
-
-  for (let f = 0; f < floors; f++) {
-    const fy = f * FLOOR_H + FLOOR_H * 0.5;
-    const pts = [
-      new THREE.Vector3(b.x - b.w * 0.3, fy, b.z + bR),
-      new THREE.Vector3(b.x,             fy, b.z + bR),
-      new THREE.Vector3(b.x + b.w * 0.3, fy, b.z + bR),
-    ];
-    const floorHours = {};
-    DATES.forEach(function(date) {
-      var lit = 0;
-      for (var h = 7; h <= 17; h += 0.5) {
-        var sun = calcSunInline(h, date.month, date.day, lat);
-        if (sun.alt < 1) continue;
-        var sd2 = sunDir(sun.az * DEG, sun.alt * DEG);
-        var dir = new THREE.Vector3(sd2.x, sd2.y, sd2.z).normalize();
-        var hasSun = false;
-        for (var s = 0; s < pts.length; s++) {
-          var rc = new THREE.Raycaster(pts[s].clone(), dir, 0.5, 500);
-          if (rc.intersectObjects(obsMeshes).length === 0) { hasSun = true; break; }
-        }
-        if (hasSun) lit++;
-      }
-      floorHours[date.label] = lit * 0.5;
-    });
-    results.push({ floor: f + 1, hours: floorHours });
-  }
-
-  // 3D：透明彩色分層覆蓋建築
-  floorAnalysisGroup = new THREE.Group();
-  results.forEach(function(r) {
-    var wh = r.hours['冬至'];
-    var color = wh >= 6 ? 0x2E7D32 : wh >= 4 ? 0x4CAF50 : wh >= 2 ? 0xFFD600 : wh >= 1 ? 0xFF9800 : 0xF44336;
-    var mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.55, depthWrite: false });
-    var slab = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.15, FLOOR_H - 0.15, b.d + 0.15), mat);
-    slab.position.set(b.x, (r.floor - 1) * FLOOR_H + FLOOR_H * 0.5, b.z);
-    slab.rotation.y = (b.ry || 0) * DEG;
-    floorAnalysisGroup.add(slab);
-  });
-  groupCustom.add(floorAnalysisGroup);
-
-  // 2D 結果面板
-  var el = document.getElementById('floor-result');
-  if (!el) return;
-
-  var minFloor = null;
-  for (var i = 0; i < results.length; i++) {
-    if (results[i].hours['冬至'] >= 1) { minFloor = results[i].floor; break; }
-  }
-
-  var bIdx = customBuildings.indexOf(b) + 1;
-  var html = '<div style="font-size:11px;color:#A0C4A0;font-weight:700;margin-bottom:5px">🏢 建築' + bIdx + ' 樓層日照（冬至）</div>';
-  html += minFloor
-    ? '<div style="font-size:11px;color:#4FC3F7;margin-bottom:7px">✅ <b>' + minFloor + 'F</b> 以上冬至日照 ≥ 1 小時</div>'
-    : '<div style="font-size:11px;color:#FF6B6B;margin-bottom:7px">⚠️ 所有樓層冬至日照 &lt; 1 小時</div>';
-
-  html += '<div style="font-size:9px;color:#6A8A6A;margin-bottom:5px;display:grid;grid-template-columns:28px 1fr 30px 30px 30px;gap:2px 4px">' +
-    '<span></span><span></span><span style="text-align:center">冬至</span><span style="text-align:center">春分</span><span style="text-align:center">夏至</span></div>';
-  html += '<div style="display:grid;grid-template-columns:28px 1fr 30px 30px 30px;gap:3px 4px;align-items:center">';
-
-  results.slice().reverse().forEach(function(r) {
-    var wh = r.hours['冬至'], ph = r.hours['春分'], sh = r.hours['夏至'];
-    var pct = Math.min(100, wh / 8 * 100);
-    var clr = wh >= 6 ? '#2E7D32' : wh >= 4 ? '#4CAF50' : wh >= 2 ? '#FFD600' : wh >= 1 ? '#FF9800' : '#F44336';
-    html += '<span style="font-size:10px;color:#9AB89A;text-align:right">' + r.floor + 'F</span>' +
-      '<div style="height:9px;border-radius:4px;background:rgba(106,138,106,0.15)">' +
-      '<div style="height:100%;width:' + pct + '%;background:' + clr + ';border-radius:4px"></div></div>' +
-      '<span style="font-size:10px;color:#C8E8C8;text-align:center">' + wh.toFixed(1) + '</span>' +
-      '<span style="font-size:10px;color:#9AB89A;text-align:center">' + ph.toFixed(1) + '</span>' +
-      '<span style="font-size:10px;color:#9AB89A;text-align:center">' + sh.toFixed(1) + '</span>';
-  });
-  html += '</div><div style="margin-top:6px;font-size:9px;color:#6A8A6A">單位：小時　深綠≥6　綠≥4　黃≥2　橙≥1　紅不足</div>';
-
-  el.innerHTML = html;
-  el.style.display = 'block';
-};
 
 // ── Spacing calculator ──
 function updateSpacingInfo() {
