@@ -1142,6 +1142,21 @@ function setCustomBuildings(buildings, skipUI) {
       });
     }
 
+    // Floor markers every 10 floors (using per-building floor height)
+    const bfh = b.fh || 3;
+    const nFloors = Math.floor(b.h / bfh);
+    const matMark = new THREE.MeshLambertMaterial({ color: 0x2A4A2A, transparent: true, opacity: 0.9 });
+    for (let mf = 10; mf <= nFloors; mf += 10) {
+      const markY = mf * bfh;
+      if (markY > b.h + 0.05) break;
+      const markMesh = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.5, 0.25, b.d + 0.5), matMark);
+      markMesh.position.set(0, markY, 0);
+      bg.add(markMesh);
+      const markLbl = textLabel(mf + 'F', 2.5, 0.7);
+      markLbl.position.set(b.w / 2 + 1.8, markY + 0.4, 0);
+      bg.add(markLbl);
+    }
+
     // Height label
     const hLbl = textLabel(b.h+'m', 3, 0.8);
     hLbl.position.set(0, b.h + 1.5, 0);
@@ -1195,7 +1210,7 @@ function selectCustomBuilding(id) {
 
 window.addCustomBuilding = function() {
   const id = Date.now();
-  customBuildings.push({id:id, x:0, z:0, w:10, d:10, h:15, ry:0});
+  customBuildings.push({id:id, x:0, z:0, w:10, d:10, h:15, ry:0, fh:3});
   setCustomBuildings(customBuildings);
   selectCustomBuilding(id);
 };
@@ -1310,12 +1325,21 @@ function updateBuildingUI() {
       {key:'w',  label:'寬 W', min:2,    max:100, step:1, unit:'m'},
       {key:'d',  label:'深 D', min:2,    max:100, step:1, unit:'m'},
       {key:'h',  label:'高 H', min:3,    max:200, step:1, unit:'m'},
+      {key:'fh', label:'層高', min:2,    max:6,   step:1, unit:'m'},
       {key:'ry', label:'旋轉', min:0,    max:355, step:5, unit:'°'},
     ];
     editorSliders.innerHTML = '';
     fields.forEach(function(f) {
       editorSliders.appendChild(makeScrubber(f.key, f.label, b[f.key] !== undefined ? b[f.key] : 0, f.min, f.max, f.step, f.unit));
     });
+    // Derived floor count display
+    var fh = b.fh || 3;
+    var nF = Math.floor(b.h / fh);
+    var infoRow = document.createElement('div');
+    infoRow.id = 'floor-count-info';
+    infoRow.style.cssText = 'font-size:10px;color:#6A8A6A;text-align:right;margin-top:3px;padding-right:2px';
+    infoRow.textContent = '= ' + nF + ' 層（每層 ' + fh + ' m，每 10 層有記號）';
+    editorSliders.appendChild(infoRow);
   } else {
     editorDiv.style.display = 'none';
   }
@@ -1491,7 +1515,7 @@ canvas.addEventListener('mouseup', function(e) {
       const pt = gHits[0].point;
       const id = Date.now();
       const snap = snapEnabled ? 5 : 1;
-      customBuildings.push({id:id, x:Math.round(pt.x/snap)*snap, z:Math.round(pt.z/snap)*snap, w:10, d:10, h:15, ry:0});
+      customBuildings.push({id:id, x:Math.round(pt.x/snap)*snap, z:Math.round(pt.z/snap)*snap, w:10, d:10, h:15, ry:0, fh:3});
       setCustomBuildings(customBuildings);
       selectCustomBuilding(id);
     }
@@ -1627,7 +1651,7 @@ window.runFloorAnalysis = function() {
   if (!b) return;
 
   const lat = currentCity.lat;
-  const FLOOR_H = 3;
+  const FLOOR_H = b.fh || 3;
   const floors = Math.max(1, Math.floor(b.h / FLOOR_H));
 
   // 只用其他建築的實體（body mesh）做遮蔽
