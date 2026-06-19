@@ -136,6 +136,25 @@
     .orient-btn:hover { background:rgba(106,138,106,0.2); }
     .orient-btn.active { background:rgba(106,138,106,0.3); border-color:#6A8A6A; color:#C8E8C8; }
 
+    /* ── Scrubber ── */
+    .scrubber-row { display:flex; align-items:center; gap:6px; margin-top:5px; }
+    .scrubber-label {
+      font-size:11px; color:#9AB89A; min-width:38px; cursor:ew-resize;
+      user-select:none; padding:3px 5px; border-radius:4px; transition:background 0.1s;
+      text-align:center;
+    }
+    .scrubber-label:hover { background:rgba(106,138,106,0.25); }
+    .scrubber-label:active { background:rgba(106,138,106,0.4); }
+    .scrubber-input {
+      flex:1; background:rgba(106,138,106,0.1); border:1px solid rgba(106,138,106,0.3);
+      color:#C8E8C8; border-radius:5px; padding:3px 6px; font-size:13px; font-weight:600;
+      text-align:right; outline:none; width:0; min-width:0;
+    }
+    .scrubber-input:focus { border-color:#6A8A6A; background:rgba(106,138,106,0.2); }
+    .scrubber-input::-webkit-inner-spin-button,
+    .scrubber-input::-webkit-outer-spin-button { opacity:0.3; }
+    .scrubber-unit { font-size:11px; color:#6A8A6A; min-width:14px; }
+
     /* ── Info panel ── */
     .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
     .info-item {
@@ -277,8 +296,11 @@
   <!-- 自訂建築 -->
   <div class="section" id="custom-section" style="display:none">
     <div class="section-label">自訂建築</div>
+    <div style="display:flex;gap:6px;margin-bottom:5px">
+      <button class="season-btn" onclick="addCustomBuilding()" style="flex:1">＋ 新增</button>
+      <button class="season-btn active" id="snap-btn" onclick="toggleSnap()" style="flex:1" title="格點吸附 (點擊開關)">⊞ 5m 格點</button>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
-      <button class="season-btn" onclick="addCustomBuilding()" style="flex:1">＋ 新增建築</button>
       <button class="season-btn" onclick="runSunlightAnalysis()" style="flex:1" id="analysis-btn">☀️ 日照分析</button>
       <button class="season-btn" onclick="clearSunlightAnalysis()" style="flex:0.5">清除</button>
     </div>
@@ -287,8 +309,9 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span id="editor-title" style="font-size:12px;color:#C8E8C8;font-weight:600"></span>
         <div style="display:flex;gap:4px">
-          <button class="season-btn" onclick="toggleBuildingTransparency()" style="padding:4px 8px;font-size:10px">👻 透明</button>
-          <button class="season-btn" onclick="deleteCustomBuilding()" style="padding:4px 8px;font-size:10px;border-color:#4A2020;color:#FF6B6B">🗑 刪除</button>
+          <button class="season-btn" onclick="toggleBuildingTransparency()" style="padding:4px 8px;font-size:10px" title="透明">👻</button>
+          <button class="season-btn" onclick="copyCustomBuilding()" style="padding:4px 8px;font-size:10px" title="複製 (⌘D)">📋</button>
+          <button class="season-btn" onclick="deleteCustomBuilding()" style="padding:4px 8px;font-size:10px;border-color:#4A2020;color:#FF6B6B" title="刪除 (Del)">🗑</button>
         </div>
       </div>
       <div id="editor-sliders"></div>
@@ -966,7 +989,7 @@ let analysisGroup = null;
 let spacingLine = null;
 const customBuildingColors = [0xC8B8A0, 0xB0A890, 0xD0C0A0, 0xA8B8C0, 0xC0A880];
 
-function setCustomBuildings(buildings) {
+function setCustomBuildings(buildings, skipUI) {
   // Remove old building groups
   Object.keys(customBuildingMeshes).forEach(id => {
     const grp = customBuildingMeshes[id];
@@ -1038,11 +1061,12 @@ function setCustomBuildings(buildings) {
     bg.add(wAnnoLbl);
 
     bg.position.set(b.x, 0, b.z);
+    bg.rotation.y = (b.ry || 0) * DEG;
     groupCustom.add(bg);
     customBuildingMeshes[b.id] = bg;
   });
 
-  updateBuildingUI();
+  if (!skipUI) updateBuildingUI();
   updateSpacingInfo();
 }
 
@@ -1067,7 +1091,7 @@ function selectCustomBuilding(id) {
 
 window.addCustomBuilding = function() {
   const id = Date.now();
-  customBuildings.push({id:id, x:0, z:0, w:10, d:10, h:15});
+  customBuildings.push({id:id, x:0, z:0, w:10, d:10, h:15, ry:0});
   setCustomBuildings(customBuildings);
   selectCustomBuilding(id);
 };
@@ -1077,6 +1101,16 @@ window.deleteCustomBuilding = function() {
   customBuildings = customBuildings.filter(b => b.id !== selectedCustomId);
   selectedCustomId = null;
   setCustomBuildings(customBuildings);
+};
+
+window.copyCustomBuilding = function() {
+  if (selectedCustomId === null) return;
+  const src = customBuildings.find(b => b.id === selectedCustomId);
+  if (!src) return;
+  const newB = Object.assign({}, src, { id: Date.now(), x: src.x + src.w + 5 });
+  customBuildings.push(newB);
+  setCustomBuildings(customBuildings);
+  selectCustomBuilding(newB.id);
 };
 
 window.toggleBuildingTransparency = function() {
@@ -1090,6 +1124,60 @@ window.toggleBuildingTransparency = function() {
     }
   });
 };
+
+function makeScrubber(key, label, value, min, max, step, unit) {
+  const row = document.createElement('div');
+  row.className = 'scrubber-row';
+
+  const lbl = document.createElement('span');
+  lbl.className = 'scrubber-label';
+  lbl.textContent = label;
+  lbl.title = '左右拖曳';
+
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.className = 'scrubber-input';
+  inp.value = value; inp.min = min; inp.max = max; inp.step = step;
+
+  inp.addEventListener('change', function() {
+    let v = parseFloat(this.value);
+    v = isNaN(v) ? parseFloat(this.defaultValue) : Math.max(min, Math.min(max, v));
+    this.value = v;
+    onCustomParam(key, v);
+    if (selectedCustomId !== null) selectCustomBuilding(selectedCustomId);
+  });
+  inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') this.blur(); });
+
+  let dragX0, dragV0, dragging = false;
+  lbl.addEventListener('mousedown', function(e) {
+    dragX0 = e.clientX; dragV0 = parseFloat(inp.value); dragging = false;
+    e.preventDefault();
+    function onMove(e2) {
+      dragging = true;
+      const dx = e2.clientX - dragX0;
+      let v = dragV0 + dx;
+      v = Math.round(v / step) * step;
+      v = Math.max(min, Math.min(max, v));
+      inp.value = v;
+      onCustomParam(key, v);
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (!dragging) { inp.focus(); inp.select(); }
+      else if (selectedCustomId !== null) selectCustomBuilding(selectedCustomId);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  const unitSpan = document.createElement('span');
+  unitSpan.className = 'scrubber-unit';
+  unitSpan.textContent = unit;
+
+  row.appendChild(lbl); row.appendChild(inp); row.appendChild(unitSpan);
+  return row;
+}
 
 function updateBuildingUI() {
   const chipsDiv = document.getElementById('building-chips');
@@ -1112,38 +1200,37 @@ function updateBuildingUI() {
     const idx = customBuildings.indexOf(b);
     editorDiv.style.display = 'block';
     editorTitle.textContent = '建築' + (idx+1) + ' 編輯';
-    const sliders = [
-      {key:'x', label:'X', min:-80, max:80, unit:'m'},
-      {key:'z', label:'Z', min:-80, max:80, unit:'m'},
-      {key:'w', label:'寬W', min:2, max:50, unit:'m'},
-      {key:'d', label:'深D', min:2, max:50, unit:'m'},
-      {key:'h', label:'高H', min:3, max:80, unit:'m'}
+    const fields = [
+      {key:'x',  label:'X',    min:-150, max:150, step:1, unit:'m'},
+      {key:'z',  label:'Z',    min:-150, max:150, step:1, unit:'m'},
+      {key:'w',  label:'寬 W', min:2,    max:100, step:1, unit:'m'},
+      {key:'d',  label:'深 D', min:2,    max:100, step:1, unit:'m'},
+      {key:'h',  label:'高 H', min:3,    max:200, step:1, unit:'m'},
+      {key:'ry', label:'旋轉', min:0,    max:355, step:5, unit:'°'},
     ];
     editorSliders.innerHTML = '';
-    sliders.forEach(s => {
-      const row = document.createElement('div');
-      row.className = 'slider-row';
-      row.style.marginTop = '4px';
-      row.innerHTML = '<span class="slider-label">' + s.label + '</span>' +
-        '<input type="range" min="'+s.min+'" max="'+s.max+'" step="1" value="'+b[s.key]+'" ' +
-        'oninput="onCustomSlider(\''+s.key+'\',this.value,this)">' +
-        '<span class="slider-val">' + b[s.key] + s.unit + '</span>';
-      editorSliders.appendChild(row);
+    fields.forEach(function(f) {
+      editorSliders.appendChild(makeScrubber(f.key, f.label, b[f.key] !== undefined ? b[f.key] : 0, f.min, f.max, f.step, f.unit));
     });
   } else {
     editorDiv.style.display = 'none';
   }
 }
 
-window.onCustomSlider = function(key, val, el) {
+function onCustomParam(key, val) {
   if (selectedCustomId === null) return;
   const b = customBuildings.find(b => b.id === selectedCustomId);
   if (!b) return;
-  b[key] = parseInt(val);
-  el.nextElementSibling.textContent = val + 'm';
-  setCustomBuildings(customBuildings);
-  selectCustomBuilding(selectedCustomId);
-};
+  b[key] = parseFloat(val);
+  setCustomBuildings(customBuildings, true);
+  const mesh = customBuildingMeshes[selectedCustomId];
+  if (mesh) {
+    mesh.traverse(function(c) {
+      if (c.isMesh && c.userData.buildingId === selectedCustomId && c.material && c.material.emissive)
+        c.material.emissive.setHex(0x224422);
+    });
+  }
+}
 
 window.saveCustomBuildings = function() {
   localStorage.setItem('shadowsim_custom_buildings', JSON.stringify(customBuildings));
@@ -1159,6 +1246,17 @@ window.loadCustomBuildings = function() {
     setCustomBuildings(customBuildings);
     alert('已讀取 ' + customBuildings.length + ' 棟建築');
   } catch(e) { alert('讀取失敗'); }
+};
+
+// ── Snap toggle ──
+let snapEnabled = true;
+window.toggleSnap = function() {
+  snapEnabled = !snapEnabled;
+  const btn = document.getElementById('snap-btn');
+  if (btn) {
+    btn.textContent = snapEnabled ? '⊞ 5m 格點' : '⊡ 自由放置';
+    btn.classList.toggle('active', snapEnabled);
+  }
 };
 
 // ── Click-to-place on ground ──
@@ -1196,7 +1294,8 @@ canvas.addEventListener('mouseup', function(e) {
     if (gHits.length > 0) {
       const pt = gHits[0].point;
       const id = Date.now();
-      customBuildings.push({id:id, x:Math.round(pt.x), z:Math.round(pt.z), w:10, d:10, h:15});
+      const snap = snapEnabled ? 5 : 1;
+      customBuildings.push({id:id, x:Math.round(pt.x/snap)*snap, z:Math.round(pt.z/snap)*snap, w:10, d:10, h:15, ry:0});
       setCustomBuildings(customBuildings);
       selectCustomBuilding(id);
     }
@@ -1353,6 +1452,20 @@ function updateSpacingInfo() {
 
   groupCustom.add(spacingLine);
 }
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', function(e) {
+  if (currentPreset !== 'custom') return;
+  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedCustomId !== null) { e.preventDefault(); window.deleteCustomBuilding(); }
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+    e.preventDefault();
+    if (selectedCustomId !== null) window.copyCustomBuilding();
+  }
+  if (e.key === 'Escape') selectCustomBuilding(null);
+});
 
 buildTaipei101(); buildNTUST(); buildIndoor(); buildCustom();
 
@@ -1626,8 +1739,7 @@ window.togglePanel = function() {
 
 // ── Init ──────────────────────────────────────────────────
 buildCityRow();
-applyScene(155, 58, 6, 25.04);   // default: June noon, Taipei
-updateHUD(calcSun(12, 6, 15, 25.04));
+setPreset('custom');
 
 document.getElementById('loading').style.display = 'none';
 
