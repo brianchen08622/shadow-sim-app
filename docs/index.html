@@ -505,10 +505,85 @@ function updateCamera() {
 }
 updateCamera();
 
-// Touch / Mouse orbit
+// Touch / Mouse orbit + building drag
 let drag = null;
-canvas.addEventListener('mousedown', e => { drag = { x: e.clientX, y: e.clientY, btn: e.button }; });
-canvas.addEventListener('mousemove', e => {
+let buildingDragId = null;
+let buildingDragOffset = { x: 0, z: 0 };
+let wasBuildingDrag = false;
+
+canvas.addEventListener('mousedown', function(e) {
+  // In custom mode, left-click on a building → start building drag
+  if (currentPreset === 'custom' && e.button === 0) {
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    raycaster.setFromCamera(mouse, camera);
+    const bodyMeshes = [];
+    Object.values(customBuildingMeshes).forEach(function(grp) {
+      grp.traverse(function(c) { if (c.isMesh && c.userData.buildingId) bodyMeshes.push(c); });
+    });
+    const bHits = raycaster.intersectObjects(bodyMeshes);
+    if (bHits.length > 0) {
+      buildingDragId = bHits[0].object.userData.buildingId;
+      wasBuildingDrag = true;
+      selectCustomBuilding(buildingDragId);
+      const b = customBuildings.find(function(b) { return b.id === buildingDragId; });
+      const gHits = customGround ? raycaster.intersectObject(customGround) : [];
+      buildingDragOffset = (b && gHits.length > 0)
+        ? { x: gHits[0].point.x - b.x, z: gHits[0].point.z - b.z }
+        : { x: 0, z: 0 };
+      canvas.style.cursor = 'grabbing';
+      return; // skip camera orbit
+    }
+  }
+  drag = { x: e.clientX, y: e.clientY, btn: e.button };
+});
+
+canvas.addEventListener('mousemove', function(e) {
+  // Building drag
+  if (buildingDragId !== null && currentPreset === 'custom') {
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    raycaster.setFromCamera(mouse, camera);
+    if (customGround) {
+      const gHits = raycaster.intersectObject(customGround);
+      if (gHits.length > 0) {
+        const pt = gHits[0].point;
+        const snap = snapEnabled ? 5 : 1;
+        const newX = Math.round((pt.x - buildingDragOffset.x) / snap) * snap;
+        const newZ = Math.round((pt.z - buildingDragOffset.z) / snap) * snap;
+        const b = customBuildings.find(function(b) { return b.id === buildingDragId; });
+        if (b) {
+          b.x = newX; b.z = newZ;
+          const mesh = customBuildingMeshes[buildingDragId];
+          if (mesh) mesh.position.set(newX, 0, newZ);
+          updateSpacingInfo();
+        }
+      }
+    }
+    return;
+  }
+  // Hover cursor hint
+  if (!drag && currentPreset === 'custom') {
+    const rect2 = canvas.getBoundingClientRect();
+    const mouse2 = new THREE.Vector2(
+      ((e.clientX - rect2.left) / rect2.width) * 2 - 1,
+      -((e.clientY - rect2.top) / rect2.height) * 2 + 1
+    );
+    raycaster.setFromCamera(mouse2, camera);
+    const bm2 = [];
+    Object.values(customBuildingMeshes).forEach(function(grp) {
+      grp.traverse(function(c) { if (c.isMesh && c.userData.buildingId) bm2.push(c); });
+    });
+    canvas.style.cursor = raycaster.intersectObjects(bm2).length > 0 ? 'grab' : '';
+  }
+
+  // Camera orbit / pan
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (drag.btn === 2) {
@@ -526,15 +601,30 @@ canvas.addEventListener('mousemove', e => {
   drag = { x: e.clientX, y: e.clientY, btn: drag.btn };
   updateCamera();
 });
-canvas.addEventListener('mouseup', () => drag = null);
-canvas.addEventListener('mouseleave', () => drag = null);
+
+canvas.addEventListener('mouseup', function() {
+  if (buildingDragId !== null) {
+    selectCustomBuilding(buildingDragId);
+    buildingDragId = null;
+    canvas.style.cursor = '';
+  }
+  drag = null;
+});
+canvas.addEventListener('mouseleave', function() {
+  if (buildingDragId !== null) {
+    selectCustomBuilding(buildingDragId);
+    buildingDragId = null;
+    canvas.style.cursor = '';
+  }
+  drag = null;
+});
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 // Mouse wheel zoom
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const minR = currentPreset === 'indoor' ? 4 : 15;
-  const maxR = currentPreset === 'indoor' ? 20 : (currentPreset === 'ntust' ? 500 : (currentPreset === 'custom' ? 300 : 120));
+  const maxR = currentPreset === 'indoor' ? 20 : (currentPreset === 'ntust' ? 500 : (currentPreset === 'custom' ? 500 : 120));
   camRadius = Math.max(minR, Math.min(maxR, camRadius * (1 + e.deltaY * 0.001)));
   updateCamera();
 }, { passive: false });
@@ -941,11 +1031,11 @@ let customGround = null;
 function buildCustom() {
   const g = groupCustom;
   const matGnd = new THREE.MeshLambertMaterial({color:0xC8C090});
-  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(200,200), matGnd);
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(500,500), matGnd);
   gnd.rotation.x = -Math.PI/2; gnd.receiveShadow = true; g.add(gnd);
   customGround = gnd;
 
-  const grid = new THREE.GridHelper(200, 20, 0x888870, 0x999980);
+  const grid = new THREE.GridHelper(500, 50, 0x888870, 0x999980);
   grid.position.y = 0.01; g.add(grid);
 
   // Grass patch
@@ -955,9 +1045,9 @@ function buildCustom() {
 
   // Roads (crossing)
   const matRoad = new THREE.MeshLambertMaterial({color:0x606060});
-  const roadH = new THREE.Mesh(new THREE.PlaneGeometry(200,6), matRoad);
+  const roadH = new THREE.Mesh(new THREE.PlaneGeometry(500,6), matRoad);
   roadH.rotation.x = -Math.PI/2; roadH.position.set(0,0.03,0); roadH.receiveShadow = true; g.add(roadH);
-  const roadV = new THREE.Mesh(new THREE.PlaneGeometry(6,200), matRoad);
+  const roadV = new THREE.Mesh(new THREE.PlaneGeometry(6,500), matRoad);
   roadV.rotation.x = -Math.PI/2; roadV.position.set(0,0.03,0); roadV.receiveShadow = true; g.add(roadV);
 
   // Tile plaza
@@ -966,18 +1056,18 @@ function buildCustom() {
   plaza.rotation.x = -Math.PI/2; plaza.position.set(30,0.02,30); plaza.receiveShadow = true; g.add(plaza);
 
   // Compass labels
-  g.add(compassLabel('N 北', 0, -95));
-  g.add(compassLabel('S 南', 0, 95));
-  g.add(compassLabel('E 東', 95, 0, Math.PI/2));
-  g.add(compassLabel('W 西', -95, 0, Math.PI/2));
+  g.add(compassLabel('N 北', 0, -240));
+  g.add(compassLabel('S 南', 0, 240));
+  g.add(compassLabel('E 東', 240, 0, Math.PI/2));
+  g.add(compassLabel('W 西', -240, 0, Math.PI/2));
 
   // Metric scale labels every 20m
-  for (let i = -80; i <= 80; i += 20) {
+  for (let i = -200; i <= 200; i += 20) {
     if (i === 0) continue;
-    const lbl = textLabel(Math.abs(i)+'m', 3, 0.8);
-    lbl.rotation.x = -Math.PI/2; lbl.position.set(i, 0.05, -3); g.add(lbl);
-    const lbl2 = textLabel(Math.abs(i)+'m', 3, 0.8);
-    lbl2.rotation.x = -Math.PI/2; lbl2.position.set(-3, 0.05, i); g.add(lbl2);
+    const lbl = textLabel(Math.abs(i)+'m', 4, 1);
+    lbl.rotation.x = -Math.PI/2; lbl.position.set(i, 0.05, -4); g.add(lbl);
+    const lbl2 = textLabel(Math.abs(i)+'m', 4, 1);
+    lbl2.rotation.x = -Math.PI/2; lbl2.position.set(-4, 0.05, i); g.add(lbl2);
   }
 }
 
@@ -1267,6 +1357,7 @@ canvas.addEventListener('mousedown', function(e) {
 });
 canvas.addEventListener('mouseup', function(e) {
   if (currentPreset !== 'custom') return;
+  if (wasBuildingDrag) { wasBuildingDrag = false; return; }
   const dx = e.clientX - mouseDown.x, dy = e.clientY - mouseDown.y;
   if (Math.abs(dx) > 5 || Math.abs(dy) > 5) return; // was a drag
 
@@ -1518,7 +1609,7 @@ function applyScene(azDeg, altDeg, month, lat) {
     var baseInt=0.5+Math.sin(altDeg*DEG)*2.2;
     sunLight.intensity=baseInt;
     if(!isIndoor){
-      var shadowSize=Math.max(60,Math.min(300,MAIN_H_REF/Math.max(0.05,Math.tan(altDeg*DEG))+30));
+      var shadowSize=Math.max(60,Math.min(500,MAIN_H_REF/Math.max(0.05,Math.tan(altDeg*DEG))+30));
       if(currentPreset==='ntust') shadowSize=Math.max(shadowSize,200);
       sunLight.shadow.camera.left=-shadowSize;sunLight.shadow.camera.right=shadowSize;
       sunLight.shadow.camera.top=shadowSize;sunLight.shadow.camera.bottom=-shadowSize;
@@ -1617,10 +1708,10 @@ window.setPreset = function(p) {
     sunLight.shadow.camera.left=-10;sunLight.shadow.camera.right=10;
     sunLight.shadow.camera.top=10;sunLight.shadow.camera.bottom=-10;
   } else if (p === 'custom') {
-    MAIN_H_REF = 20; camRadius = 80; camTarget.set(0,8,0);
+    MAIN_H_REF = 20; camRadius = 120; camTarget.set(0,8,0);
     camTheta = DEG*40; camPhi = DEG*55;
-    sunLight.shadow.camera.left=-80;sunLight.shadow.camera.right=80;
-    sunLight.shadow.camera.top=80;sunLight.shadow.camera.bottom=-80;
+    sunLight.shadow.camera.left=-200;sunLight.shadow.camera.right=200;
+    sunLight.shadow.camera.top=200;sunLight.shadow.camera.bottom=-200;
   } else {
     MAIN_H_REF = 38; camRadius = 65; camTarget.set(0,8,0);
     camTheta = DEG*40; camPhi = DEG*55;
