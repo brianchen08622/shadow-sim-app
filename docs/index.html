@@ -1704,8 +1704,13 @@ const cDay=new THREE.Color(0x87CEEB),cDawn=new THREE.Color(0xFF7040),
 function applyScene(azDeg, altDeg, month, lat) {
   const isIndoor = currentPreset === 'indoor';
   const sd=sunDir(azDeg*DEG,altDeg*DEG), dist=currentPreset==='ntust'?150:(currentPreset==='custom'?120:80);
-  // NTUST 場景以校園中心為基準（TR西、圖書館東、RB中東偏南）
-  const tgt = currentPreset === 'ntust' ? new THREE.Vector3(0,0,2) : new THREE.Vector3(0,0,0);
+  // 自訂場景：陰影中心跟著建築群中心
+  let tgt = currentPreset === 'ntust' ? new THREE.Vector3(0,0,2) : new THREE.Vector3(0,0,0);
+  if (currentPreset === 'custom' && customBuildings.length > 0) {
+    const cx = customBuildings.reduce(function(s,b){return s+b.x;},0) / customBuildings.length;
+    const cz = customBuildings.reduce(function(s,b){return s+b.z;},0) / customBuildings.length;
+    tgt = new THREE.Vector3(cx, 0, cz);
+  }
   if(altDeg>0){
     sunLight.position.set(sd.x*dist+tgt.x, sd.y*dist, sd.z*dist+tgt.z);
     sunLight.target.position.copy(tgt); sunLight.target.updateMatrixWorld();
@@ -1714,6 +1719,7 @@ function applyScene(azDeg, altDeg, month, lat) {
     if(!isIndoor){
       var shadowSize=Math.max(60,Math.min(500,MAIN_H_REF/Math.max(0.05,Math.tan(altDeg*DEG))+30));
       if(currentPreset==='ntust') shadowSize=Math.max(shadowSize,200);
+      if(currentPreset==='custom') shadowSize=Math.max(shadowSize,250);
       sunLight.shadow.camera.left=-shadowSize;sunLight.shadow.camera.right=shadowSize;
       sunLight.shadow.camera.top=shadowSize;sunLight.shadow.camera.bottom=-shadowSize;
       sunLight.shadow.camera.updateProjectionMatrix();
