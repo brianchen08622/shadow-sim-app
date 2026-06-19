@@ -1094,6 +1094,12 @@ let spacingLine = null;
 const customBuildingColors = [0xC8B8A0, 0xB0A890, 0xD0C0A0, 0xA8B8C0, 0xC0A880];
 
 function setCustomBuildings(buildings, skipUI) {
+  // 正規化：確保每棟建築都有完整屬性（相容舊存檔）
+  buildings.forEach(function(b) {
+    if (b.fh  === undefined || b.fh  === 0)  b.fh  = 3;
+    if (b.ry  === undefined)                  b.ry  = 0;
+  });
+
   // Remove old building groups
   Object.keys(customBuildingMeshes).forEach(id => {
     const grp = customBuildingMeshes[id];
@@ -1320,17 +1326,18 @@ function updateBuildingUI() {
     editorDiv.style.display = 'block';
     editorTitle.textContent = '建築' + (idx+1) + ' 編輯';
     const fields = [
-      {key:'x',  label:'X',    min:-150, max:150, step:1, unit:'m'},
-      {key:'z',  label:'Z',    min:-150, max:150, step:1, unit:'m'},
-      {key:'w',  label:'寬 W', min:2,    max:100, step:1, unit:'m'},
-      {key:'d',  label:'深 D', min:2,    max:100, step:1, unit:'m'},
-      {key:'h',  label:'高 H', min:3,    max:200, step:1, unit:'m'},
-      {key:'fh', label:'層高', min:2,    max:6,   step:1, unit:'m'},
-      {key:'ry', label:'旋轉', min:0,    max:355, step:5, unit:'°'},
+      {key:'x',  label:'X',    min:-150, max:150, step:1, unit:'m', def:0},
+      {key:'z',  label:'Z',    min:-150, max:150, step:1, unit:'m', def:0},
+      {key:'w',  label:'寬 W', min:2,    max:100, step:1, unit:'m', def:10},
+      {key:'d',  label:'深 D', min:2,    max:100, step:1, unit:'m', def:10},
+      {key:'h',  label:'高 H', min:3,    max:200, step:1, unit:'m', def:15},
+      {key:'fh', label:'層高', min:2,    max:6,   step:1, unit:'m', def:3},
+      {key:'ry', label:'旋轉', min:0,    max:355, step:5, unit:'°', def:0},
     ];
     editorSliders.innerHTML = '';
     fields.forEach(function(f) {
-      editorSliders.appendChild(makeScrubber(f.key, f.label, b[f.key] !== undefined ? b[f.key] : 0, f.min, f.max, f.step, f.unit));
+      var val = (b[f.key] !== undefined && b[f.key] !== null) ? b[f.key] : f.def;
+      editorSliders.appendChild(makeScrubber(f.key, f.label, val, f.min, f.max, f.step, f.unit));
     });
     // Derived floor count display
     var fh = b.fh || 3;
