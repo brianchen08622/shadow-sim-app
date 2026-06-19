@@ -1933,6 +1933,24 @@ window.togglePanel = function() {
 
 // ── Init ──────────────────────────────────────────────────
 buildCityRow();
+
+// 舊版 shadowsim_custom_buildings → 自動升級到新專案格式
+(function migrateOldSave() {
+  try {
+    const old = localStorage.getItem('shadowsim_custom_buildings');
+    if (!old) return;
+    const buildings = JSON.parse(old);
+    if (!Array.isArray(buildings) || buildings.length === 0) return;
+    const list = JSON.parse(localStorage.getItem('shadowsim_projects') || '[]');
+    const alreadyMigrated = list.some(function(p) { return p.name === '舊版存檔'; });
+    if (!alreadyMigrated) {
+      list.unshift({ id: Date.now(), name: '舊版存檔', date: '已升級', buildings: buildings });
+      localStorage.setItem('shadowsim_projects', JSON.stringify(list));
+    }
+    localStorage.removeItem('shadowsim_custom_buildings');
+  } catch(e) {}
+})();
+
 setPreset('custom');
 renderProjectList();
 
