@@ -318,9 +318,21 @@
     </div>
     <div id="spacing-info" style="display:none;margin-top:6px;font-size:11px;color:#4FC3F7"></div>
     <div id="analysis-result" style="display:none;margin-top:6px;font-size:11px;color:#81C784"></div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button class="season-btn" onclick="saveCustomBuildings()" style="flex:1">💾 儲存</button>
-      <button class="season-btn" onclick="loadCustomBuildings()" style="flex:1">📂 讀取</button>
+    <div style="margin-top:8px">
+      <div style="display:flex;gap:5px;margin-bottom:5px">
+        <input type="text" id="project-name" placeholder="專案名稱…"
+          style="flex:1;background:rgba(106,138,106,0.1);border:1px solid rgba(106,138,106,0.3);
+                 color:#C8E8C8;border-radius:5px;padding:4px 8px;font-size:12px;outline:none;min-width:0">
+        <button class="season-btn" onclick="saveProject()" style="padding:4px 10px;flex-shrink:0" title="儲存至瀏覽器">💾 存</button>
+      </div>
+      <div style="display:flex;gap:5px;margin-bottom:6px">
+        <button class="season-btn" onclick="downloadProject()" style="flex:1;font-size:11px">📥 下載 .json</button>
+        <label class="season-btn" for="load-file"
+          style="flex:1;font-size:11px;text-align:center;cursor:pointer;margin:0;
+                 display:flex;align-items:center;justify-content:center">📂 載入檔案</label>
+        <input type="file" id="load-file" accept=".json" style="display:none" onchange="importProject(this)">
+      </div>
+      <div id="project-list"></div>
     </div>
   </div>
 
@@ -1322,21 +1334,112 @@ function onCustomParam(key, val) {
   }
 }
 
-window.saveCustomBuildings = function() {
-  localStorage.setItem('shadowsim_custom_buildings', JSON.stringify(customBuildings));
-  alert('已儲存 ' + customBuildings.length + ' 棟建築');
+// ── Project management ──
+let currentProjectName = '';
+
+function getProjects() {
+  try { return JSON.parse(localStorage.getItem('shadowsim_projects') || '[]'); }
+  catch(e) { return []; }
+}
+function putProjects(list) { localStorage.setItem('shadowsim_projects', JSON.stringify(list)); }
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
+}
+
+window.saveProject = function() {
+  const nameEl = document.getElementById('project-name');
+  const name = (nameEl && nameEl.value.trim()) || '未命名場景';
+  currentProjectName = name;
+  const list = getProjects();
+  const idx = list.findIndex(function(p) { return p.name === name; });
+  const entry = { id: Date.now(), name: name, date: todayStr(), buildings: JSON.parse(JSON.stringify(customBuildings)) };
+  if (idx >= 0) { entry.id = list[idx].id; list[idx] = entry; }
+  else { list.push(entry); }
+  putProjects(list);
+  renderProjectList();
 };
 
-window.loadCustomBuildings = function() {
-  const data = localStorage.getItem('shadowsim_custom_buildings');
-  if (!data) { alert('無儲存資料'); return; }
-  try {
-    customBuildings = JSON.parse(data);
-    selectedCustomId = null;
-    setCustomBuildings(customBuildings);
-    alert('已讀取 ' + customBuildings.length + ' 棟建築');
-  } catch(e) { alert('讀取失敗'); }
+window.downloadProject = function() {
+  const nameEl = document.getElementById('project-name');
+  const name = (nameEl && nameEl.value.trim()) || currentProjectName || '光影場景';
+  const blob = new Blob([JSON.stringify({ name: name, buildings: customBuildings }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name + '.json'; a.click();
+  URL.revokeObjectURL(url);
 };
+
+window.importProject = function(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      const raw = Array.isArray(data) ? data : (data.buildings || []);
+      if (!Array.isArray(raw)) throw new Error('格式錯誤');
+      customBuildings = raw.map(function(b, i) { return Object.assign({}, b, { id: Date.now() + i }); });
+      selectedCustomId = null;
+      setCustomBuildings(customBuildings);
+      if (data.name) {
+        currentProjectName = data.name;
+        const nameEl = document.getElementById('project-name');
+        if (nameEl) nameEl.value = data.name;
+      }
+      renderProjectList();
+    } catch(err) { alert('載入失敗：' + err.message); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+};
+
+window.loadProject = function(id) {
+  const p = getProjects().find(function(p) { return p.id === id; });
+  if (!p) return;
+  customBuildings = JSON.parse(JSON.stringify(p.buildings));
+  selectedCustomId = null;
+  setCustomBuildings(customBuildings);
+  currentProjectName = p.name;
+  const nameEl = document.getElementById('project-name');
+  if (nameEl) nameEl.value = p.name;
+  renderProjectList();
+};
+
+window.deleteProject = function(id) {
+  const p = getProjects().find(function(p) { return p.id === id; });
+  if (!p || !confirm('刪除「' + p.name + '」？')) return;
+  putProjects(getProjects().filter(function(p) { return p.id !== id; }));
+  renderProjectList();
+};
+
+function renderProjectList() {
+  const el = document.getElementById('project-list');
+  if (!el) return;
+  const list = getProjects();
+  if (list.length === 0) {
+    el.innerHTML = '<div style="font-size:10px;color:#6A8A6A;text-align:center;padding:5px 0">尚無儲存專案</div>';
+    return;
+  }
+  el.innerHTML = '';
+  list.slice().reverse().forEach(function(p) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:4px;padding:4px 0;border-bottom:1px solid rgba(106,138,106,0.1)';
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;overflow:hidden;min-width:0';
+    info.innerHTML = '<div style="font-size:11px;color:#C8E8C8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + p.name + '</div>' +
+      '<div style="font-size:9px;color:#6A8A6A">' + p.date + ' · ' + p.buildings.length + ' 棟</div>';
+    const loadBtn = document.createElement('button');
+    loadBtn.className = 'season-btn'; loadBtn.textContent = '載入';
+    loadBtn.style.cssText = 'padding:2px 8px;font-size:10px;flex-shrink:0';
+    loadBtn.onclick = function() { window.loadProject(p.id); };
+    const delBtn = document.createElement('button');
+    delBtn.className = 'season-btn'; delBtn.textContent = '✕';
+    delBtn.style.cssText = 'padding:2px 6px;font-size:10px;flex-shrink:0;border-color:#4A2020;color:#FF6B6B';
+    delBtn.onclick = function() { window.deleteProject(p.id); };
+    row.appendChild(info); row.appendChild(loadBtn); row.appendChild(delBtn);
+    el.appendChild(row);
+  });
+}
 
 // ── Snap toggle ──
 let snapEnabled = true;
@@ -1831,6 +1934,7 @@ window.togglePanel = function() {
 // ── Init ──────────────────────────────────────────────────
 buildCityRow();
 setPreset('custom');
+renderProjectList();
 
 document.getElementById('loading').style.display = 'none';
 
